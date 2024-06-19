@@ -24,10 +24,32 @@ def sequential():
 def conv_model(input_shape):
     input_img = tf.keras.Input(shape=input_shape)
 
-    Z1 = tfl.Conv2D(filters=8, kernel_size=(4, 4),
-                    strides=(1, 1), padding="same")(input_img)
+    # can be considered as Z0, A0, or even P0
+    A0 = input_img
 
-    outputs = Z1
+    # FIRST LAYER
+    Z1 = tfl.Conv2D(filters=8, kernel_size=(4, 4),
+                    strides=(1, 1), padding="same")(A0)
+    # activation of the first layer
+    A1 = tfl.ReLU()(Z1)
+
+    # max pooling in the first layer
+    P1 = tfl.MaxPool2D(pool_size=(8, 8), strides=(8, 8), padding='same')(A1)
+
+    # SECOND LAYER
+    Z2 = tfl.Conv2D(filters=16, kernel_size=(2, 2),
+                    strides=(1, 1), padding="same")(P1)
+    # activation of the second layer
+    A2 = tfl.ReLU()(Z2)
+    # max pooling of the second layer
+    P2 = tfl.MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding='same')(A2)
+
+    # Final flattened layer
+    F = tfl.Flatten()(P2)
+
+    # output layer
+    outputs = tfl.Dense(units=6, activation="softmax")(F)
+
     model = tf.keras.Model(inputs=input_img, outputs=outputs)
     return model
 
