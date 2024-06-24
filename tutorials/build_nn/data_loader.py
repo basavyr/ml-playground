@@ -13,7 +13,7 @@ def get_data() -> tuple:
         root="data",
         train=True,
         download=True,
-        transform=ToTensor()
+        transform=ToTensor(),
     )
 
     test_data = datasets.FashionMNIST(
