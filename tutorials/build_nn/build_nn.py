@@ -5,6 +5,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
+from torchvision.transforms import ToTensor
 import torch.functional
 
 
@@ -12,65 +13,55 @@ import model as m
 import data_loader as dl
 
 
-def get_device():
-
-    device = (
-        "cuda"
-        if torch.cuda.is_available()
-        else "mps"
-        if torch.backends.mps.is_available()
-        else "cpu"
-    )
-    print(f"Using {device} device")
-    return device
-
-
-def get_model(input_size, output_size, params, device):
-    model = m.Model(input_size, output_size, params).to(device)
-    return model
-
-
 def init_model_parameters():
     n_samples = 1000
-    input_size = 250
-    output_size = 3
+    input_size = 28
+    output_size = 10
     params = [1, 1]
-    return n_samples, input_size, output_size, params
+    batch_size = 128
+    return n_samples, input_size, output_size, params, batch_size
 
 
-def test_tensor(model):
-    device = get_device()
-    n_samples, input_size, output_size, params = init_model_parameters()
-    X = torch.rand(n_samples, input_size, input_size, device=device)
+def train(train_dataloader, device, model, loss_function, optimizer, batch_size=128):
 
-    # evaluate the model
-    Y_pred = model(X)
+    train_dataloader, _ = dl.get_loaders(batch_size)
+    size = len(train_dataloader.dataset)  # size of data
 
-    print(f"Predicted class: {Y_pred}")
+    # Set the model to training mode - important for batch normalization and dropout layers
+    # Unnecessary in this situation but added for best practices
+    model.train()
+    for batch, (X, y) in enumerate(train_dataloader):
+        # Compute prediction and loss
+        X, y = X.to(device), y.to(device)
+        pred = model(X)
+        loss = loss_function(pred, y)
 
-    print(f"Model structure: {model}\n\n")
+        # Backpropagation
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
 
-
-def train(train_dataloader, model, loss_function, optimizer):
-    print(model)
-
-    exit(1)
+        if batch % 100 == 0:
+            loss, current = loss.item(), batch * batch_size + len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
 def main():
-    # get device
-    device = get_device()
-    n_samples, input_size, output_size, params = init_model_parameters()
+    # device
+    device = m.MPS_DEVICE
 
-    # automatically download the data sets and create the loaders for both training and test data
-    train_dataloader, test_dataloader = dl.get_loaders(batch_size=128)
+    # params
+    n_samples, input_size, output_size, params, batch_size = init_model_parameters()
+    # data sets
+    train_dataloader, test_dataloader = dl.get_loaders(batch_size=batch_size)
 
-    model = get_model(input_size, output_size, params, device)
-
+    # model
+    model = m.Model(input_size, output_size, params).to(device)
     loss_fn = nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters())
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
-    train(train_dataloader, model, loss_fn, optimizer)
+    # training
+    train(train_dataloader, device, model, loss_fn, optimizer, batch_size)
 
 
 if __name__ == "__main__":

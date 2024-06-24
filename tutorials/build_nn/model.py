@@ -6,6 +6,9 @@ from torchvision import datasets, transforms
 import torch.functional
 
 
+MPS_DEVICE = "mps"
+
+
 class Model(nn.Module):
     def __init__(self, input_size: int, output_size: int, params: list):
         super().__init__()
@@ -21,12 +24,27 @@ class Model(nn.Module):
             nn.Linear(50, 25),
             nn.ReLU(),
             nn.Linear(25, self.output_size),
-            nn.Softmax(dim=1)
         )
 
     def forward(self, x):
         x = self.flatten(x)
-        a, b = self.params  # perform ax+b
-        x = a*x+b
-        x = self.layer_stack(x)
-        return x.argmax(1)
+        logits = self.layer_stack(x)
+        return logits
+
+
+class NeuralNetwork(nn.Module):
+    def __init__(self, input_size: int, output_size: int):
+        super().__init__()
+        self.flatten = nn.Flatten()
+        self.linear_relu_stack = nn.Sequential(
+            nn.Linear(input_size*input_size, 512),
+            nn.ReLU(),
+            nn.Linear(512, 512),
+            nn.ReLU(),
+            nn.Linear(512, output_size),  # 10 output_size
+        )
+
+    def forward(self, x):
+        x = self.flatten(x)
+        logits = self.linear_relu_stack(x)
+        return logits
