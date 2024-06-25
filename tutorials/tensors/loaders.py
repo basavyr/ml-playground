@@ -35,7 +35,7 @@ class CustomDataset(Dataset):
         return x, y
 
 
-def get_mnist_samples(n_samples: int) -> torch.tensor:
+def get_mnist_like(n_samples: int) -> torch.tensor:
     # Generate 3 images of size 2x2 and print the resulting tensor
     height = 64
     width = 64
@@ -45,20 +45,22 @@ def get_mnist_samples(n_samples: int) -> torch.tensor:
 
 def main():
     M = 64
-    mnist = get_mnist_samples(M)
+    batch_size = 64
+    mnist = get_mnist_like(M)
     labels = torch.tensor([i for i in range(M)], dtype=torch.float64)
 
     # Create an instance of the custom dataset
     custom_dataset = CustomDataset(mnist, labels)
 
     # Create a data loader
-    data_loader = DataLoader(custom_dataset, batch_size=8, shuffle=True)
+    data_loader = DataLoader(
+        custom_dataset, batch_size=batch_size, shuffle=True)
 
     # Example of using the data loader
     for batch_idx, (x, y) in enumerate(data_loader):
-        print(f"Batch {batch_idx+1}")
+        print(f"Batch {batch_idx+1}/{len(data_loader)}")
         print(f"Data: {x.shape}")
-        print(f"Labels: {y.shape}")
+        print(f"Labels: {y}")
 
 
 if __name__ == "__main__":
