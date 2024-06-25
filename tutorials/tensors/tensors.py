@@ -12,7 +12,7 @@ class Conv(nn.Module):
         super(Conv, self).__init__()
         self.height, self.width = image_size  # we work with squared images
         self.in_channels = 3  # for RGB images
-        self.out_channels = 3  # can be any number you decide
+        self.out_channels = 64  # can be any number you decide
         self.kernel_size = 3
         self.pool_size = 2
 
@@ -21,10 +21,10 @@ class Conv(nn.Module):
                       self.kernel_size, padding='same'),
             nn.MaxPool2d(self.pool_size),
             nn.Conv2d(self.out_channels, self.out_channels,
-                      self.kernel_size, padding="same"),
+                      self.kernel_size),
             nn.MaxPool2d(self.pool_size),
         )
-        self.flatten = nn.Flatten()
+        self.flatten = nn.Flatten(0, -1)
 
     def forward(self, x):
         x = self.conv_net(x)
@@ -60,9 +60,10 @@ if __name__ == "__main__":
 
     for idx, grid in enumerate(images):
         print(f'Image {idx+1}')
-        print(grid)
+        print(grid.shape)
         print(f'Flattened Image {idx+1}')
-        print(grid.view(-1))
+        flat_grid = grid.view(-1)
+        print(flat_grid.shape)
 
         model = Conv(image_size).to(device)
         model.train()
