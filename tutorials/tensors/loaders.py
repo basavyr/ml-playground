@@ -10,7 +10,7 @@ class CustomDataset(Dataset):
 
         # manually transform the labels into binary classification
         self.labels = torch.tensor(
-            list(map(lambda val: val == "ones", labels)), dtype=torch.bool)
+            list(map(lambda val: 1 if val == "ones" else 0, labels)), dtype=torch.float32)
 
     def __len__(self):
         return len(self.data)
@@ -62,9 +62,9 @@ class MNISTLike:
         """
         def generate_image(tensor_type):
             if tensor_type == "ones":
-                return torch.ones([1, self.height, self.width])
+                return torch.ones([1, self.height, self.width], requires_grad=True)
             elif tensor_type == "rands":
-                return torch.rand([1, self.height, self.width])
+                return torch.rand([1, self.height, self.width], requires_grad=True)
             else:
                 raise ValueError(f"Unknown tensor type: {tensor_type}")
 
@@ -84,11 +84,7 @@ class MNISTLike:
         labels = np.random.choice(self.TENSOR_TYPE_LABELS, self.n_samples)
         data = self.generate_data(labels)
 
-        # Transform labels into binary classification tensor
-        binary_labels = torch.tensor(
-            list(map(lambda val: val == "ones", labels)), dtype=torch.long)
-
-        custom_dataset = CustomDataset(data, binary_labels)
+        custom_dataset = CustomDataset(data, labels)
         # Create a data loader
         data_loader = DataLoader(
             custom_dataset, batch_size=self.batch_size, shuffle=True)
