@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch import nn
 
+import torch.optim as optim
+
 import torch.nn.functional as F
 
 
@@ -41,25 +43,40 @@ def data_loader(M: int, batch_size: int) -> DataLoader:
     return train_dataloader
 
 
+def train_model(model: nn.Module, device: torch.device, num_epochs: int, data_loader: DataLoader):
+    model.to(device)
+    model.train()
+
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters())
+
+    for epoch in range(num_epochs):
+        print(f'Training on epoch {epoch}')
+
+        for batch_id, mini_batch in enumerate(data_loader):
+            X, y = mini_batch
+            X, y = X.to(device), y.to(device)
+            print(f'Training data allocated to < {X.device} >')
+            break
+        break
+
+
 def main():
     M_test = 60000
     M_train = 10000
     batch_size = 64
+    num_epochs = 1000
     train_dataloader = data_loader(M_train, batch_size)
     test_dataloader = data_loader(M_test, batch_size)
 
     device = torch.device("mps")
 
-    model = Model(28*28).to(device)
-
     # generate a local tensor that can be feed into the network
     _t = torch.rand((28, 28), device=device).view(-1,
                                                   28*28)  # needs to be flattened out
+    model = Model(28*28).to(device)
 
-    for batch_id, mini_batch in enumerate(train_dataloader):
-        X, y = mini_batch
-        X, y = X.to(device), y.to(device)
-        break
+    train_model(model, device, num_epochs, train_dataloader)
 
 
 if __name__ == "__main__":
