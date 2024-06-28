@@ -7,3 +7,5 @@ tutorials/tensors/__pycache__/
 tutorials/training_model/data
 
 *.pth
+
+tutorials/.DS_Store
