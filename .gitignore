@@ -4,5 +4,6 @@ src/ensemble/data/
 tutorials/build_nn/__pycache__/
 tutorials/build_nn/data/
 tutorials/tensors/__pycache__/
+tutorials/training_model/data
 
 *.pth
