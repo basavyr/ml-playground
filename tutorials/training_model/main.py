@@ -135,7 +135,35 @@ def train_model(model: nn.Module, device: torch.device, num_epochs: int, data_lo
 
     torch.save(model.state_dict(), "model.pth")
 
-# def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader):
+
+def logical_mse(t1: torch.tensor, t2: torch.tensor):
+    """
+    MSE loss
+    Logical implementation for the loss function
+    Source: https://www.kaggle.com/code/basavyr/pytorch-basics-linear-regression-from-scratch/edit
+    """
+    diff = t1 - t2
+    return torch.sum(diff * diff) / diff.numel()
+
+
+def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader):
+
+    model.eval()
+
+    loss_fn = nn.MSELoss(reduction='sum')  # Sum the squared errors
+
+    total_loss = 0
+    total_samples = 0
+    with torch.no_grad():
+        for _, mini_batch in enumerate(data_loader):
+            X, y = mini_batch
+            X, y = X.to(device), y.to(device)
+
+            y_pred = model(X)
+            loss = loss_fn(y_pred, y)
+            print(loss.item()/X.numel(), logical_mse(y_pred, y).item())
+            total_loss += loss.item()
+            total_samples += X.shape[0]
 
 
 def main():
@@ -157,10 +185,7 @@ def main():
         train_model(model, device, num_epochs, train_dataloader)
     else:
         model.load_state_dict(torch.load(MODEL_FILE_PATH))
-        model.eval()
-        X = torch.ones([1, 28, 28]).to(device)
-        Y = model(X)
-        print(Y)
+        test_model(model, device, test_dataloader)
 
 
 if __name__ == "__main__":
