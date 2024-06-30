@@ -192,7 +192,7 @@ def main():
     M_train = 60000
     M_test = 10000
     batch_size = 64
-    num_epochs = 20
+    num_epochs = 50
     train_dataloader = synthetic_linear_data(M_train, batch_size)
     test_dataloader = synthetic_linear_data(M_test, batch_size)
 
