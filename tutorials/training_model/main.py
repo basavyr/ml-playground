@@ -12,6 +12,7 @@ import torch.nn.functional as F
 
 import os
 
+import plotter as plt
 
 MODEL_FILE_PATH = "model.pth"
 
@@ -159,6 +160,8 @@ def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader):
     total_samples = 0
     num_batches = 0
 
+    once = True
+
     with torch.no_grad():
         for _, mini_batch in enumerate(data_loader):
             X, y = mini_batch
@@ -167,17 +170,22 @@ def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader):
             y_pred = model(X)
             loss_1 = loss_mean(y_pred, y)
             loss_2 = loss_sum(y_pred, y)
-            loss_logical = logical_mse(y_pred, y).item()
+            loss_3 = logical_mse(y_pred, y)
 
             total_loss_1 += loss_1.item()
             total_loss_2 += loss_2.item()
+            total_loss_3 += loss_3.item()
             total_samples += X.numel()
             num_batches += 1
+            if once:
+                plt.plot_tensors(X, y, y_pred)
+                once = False
 
     loss_mean = total_loss_1/num_batches
     loss_sum = total_loss_2/total_samples
+    loss_logical = total_loss_2/total_samples
 
-    return loss_mean, loss_sum
+    return loss_mean, loss_sum, loss_logical
 
 
 def main():
@@ -199,9 +207,11 @@ def main():
         train_model(model, device, num_epochs, train_dataloader)
     else:
         model.load_state_dict(torch.load(MODEL_FILE_PATH))
-        loss_mean, loss_sum = test_model(model, device, test_dataloader)
+        loss_mean, loss_sum, loss_logical = test_model(
+            model, device, test_dataloader)
         print(f'Using mean ->{loss_mean}')
         print(f'Using sum ->{loss_sum}')
+        print(f'Using logical mse ->{loss_logical}')
 
 
 if __name__ == "__main__":
