@@ -9,3 +9,5 @@ tutorials/training_model/data
 *.pth
 
 tutorials/.DS_Store
+
+tutorials/training_model/__pycache__/
