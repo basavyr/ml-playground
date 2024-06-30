@@ -11,3 +11,5 @@ tutorials/training_model/data
 tutorials/.DS_Store
 
 tutorials/training_model/__pycache__/
+
+tutorials/training_model/plot.pdf
