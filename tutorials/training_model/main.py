@@ -150,20 +150,34 @@ def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader):
 
     model.eval()
 
-    loss_fn = nn.MSELoss(reduction='sum')  # Sum the squared errors
+    loss_mean = nn.MSELoss()  # Sum the squared errors
+    loss_sum = nn.MSELoss(reduction='sum')  # Sum the squared errors
 
-    total_loss = 0
+    total_loss_1 = 0
+    total_loss_2 = 0
+    total_loss_3 = 0
     total_samples = 0
+    num_batches = 0
+
     with torch.no_grad():
         for _, mini_batch in enumerate(data_loader):
             X, y = mini_batch
             X, y = X.to(device), y.to(device)
 
             y_pred = model(X)
-            loss = loss_fn(y_pred, y)
-            print(loss.item()/X.numel(), logical_mse(y_pred, y).item())
-            total_loss += loss.item()
-            total_samples += X.shape[0]
+            loss_1 = loss_mean(y_pred, y)
+            loss_2 = loss_sum(y_pred, y)
+            loss_logical = logical_mse(y_pred, y).item()
+
+            total_loss_1 += loss_1.item()
+            total_loss_2 += loss_2.item()
+            total_samples += X.numel()
+            num_batches += 1
+
+    loss_mean = total_loss_1/num_batches
+    loss_sum = total_loss_2/total_samples
+
+    return loss_mean, loss_sum
 
 
 def main():
@@ -185,7 +199,9 @@ def main():
         train_model(model, device, num_epochs, train_dataloader)
     else:
         model.load_state_dict(torch.load(MODEL_FILE_PATH))
-        test_model(model, device, test_dataloader)
+        loss_mean, loss_sum = test_model(model, device, test_dataloader)
+        print(f'Using mean ->{loss_mean}')
+        print(f'Using sum ->{loss_sum}')
 
 
 if __name__ == "__main__":
