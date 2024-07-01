@@ -65,6 +65,12 @@ class Model(nn.Module):
         return x
 
 
+def init_weights(model: nn.Module) -> None:
+    if isinstance(model, nn.Linear):
+        nn.init.xavier_uniform_(model.weight)
+        nn.init.zeros_(model.bias)  # Initialize biases to zero
+
+
 def print_params(model, epoch, batch_id):
     print(f"Epoch {epoch+1}, Batch {batch_id+1}")
     for name, param in model.named_parameters():
@@ -97,6 +103,8 @@ def synthetic_linear_data(M: int, batch_size: int) -> DataLoader:
 
 def train_model(model: nn.Module, device: torch.device, num_epochs: int, data_loader: DataLoader):
     model.to(device)
+
+    model.apply(init_weights)
 
     loss_fn = nn.MSELoss()
     optimizer = optim.Adam(model.parameters())
