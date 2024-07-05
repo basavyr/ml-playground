@@ -3,6 +3,8 @@
 import os
 import torch
 
+import copy
+
 import torch.nn as nn
 
 import torchvision.datasets as datasets
@@ -25,15 +27,21 @@ class Net(nn.Module):
     def __init__(self, input_size: int):
         super(Net, self).__init__()
         self.fc1 = nn.Linear(input_size, 512)
-        self.fc2 = nn.Linear(512, 512)
+        self.fc21 = nn.Linear(512, 512)
+        self.fc22 = nn.Linear(512, 512)
+        self.fc23 = nn.Linear(512, 512)
         self.fc3 = nn.Linear(512, 10)
 
     def forward(self, x: torch.tensor):
         x = x.view(x.size(0), -1)  # flatten the input
         x = self.fc1(x)
         x = torch.relu(x)
-        x = self.fc2(x)
+        x = self.fc21(x)
         x = torch.relu(x)
+        # x = self.fc22(x)
+        # x = torch.relu(x)
+        # x = self.fc23(x)
+        # x = torch.relu(x)
         logits = self.fc3(x)
         return logits
 
@@ -100,6 +108,10 @@ def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader, 
     loss_fn = nn.CrossEntropyLoss()
 
     model.eval()
+
+    best_acc = -torch.inf
+    best_loss = torch.inf
+    best_weights = None
     with torch.no_grad():
         for idx, batch in enumerate(data_loader):
             X, Y = batch
@@ -113,16 +125,24 @@ def test_model(model: nn.Module, device: torch.device, data_loader: DataLoader, 
             y_pred = model(X)
 
             preds = torch.argmax(y_pred, dim=1)
-            # acc_perc = (preds == Y).float().sum()/(preds == Y).numel()
-            # print(f'Acc -> {acc_perc}')
+            # acc = (preds == Y).float().sum()/(preds == Y).numel()
 
-            print(f'Batch # {idx}')
             loss = loss_fn(y_pred, Y)
-            print(f'Loss -> {loss.item()}')
-            acc_perc = (preds == Y).float().mean()
-            print(f'Acc -> {acc_perc}')
+            acc = (preds == Y).float().mean()
+            if acc >= best_acc:
+                best_acc = acc
+                best_weights = copy.deepcopy(model.state_dict())
+
+            if loss.item() <= best_loss:
+                best_loss = loss.item()
             if idx == iter_stop and iter_stop != -1:
                 break
+
+    print(f'Best accuracy: {best_acc}')
+    print(f'Best loss: {best_loss}')
+    model.load_state_dict(best_weights)
+
+    print(model.state_dict())
 
 
 def main(device_as_input_string: str):
@@ -163,6 +183,9 @@ def main(device_as_input_string: str):
 
 
 if __name__ == "__main__":
+    print('Run the script as such:')
+    print('$ python3 net.py <device>')
+    print('$ python3 net.py <device> clean')
     if len(sys.argv) > 1:
         device_as_input_string = sys.argv[1]
     if len(sys.argv) == 3:
