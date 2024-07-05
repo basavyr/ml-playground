@@ -48,6 +48,8 @@ def train_model(model: nn.Module, device: torch.device, data_loader: DataLoader,
     once = False
     for epoch in range(num_epochs):
         running_loss = 0
+        correct_labels_per_epoch = 0
+        total_labels = 0
         for idx, batch in enumerate(data_loader):
             X, Y = batch
 
@@ -67,14 +69,22 @@ def train_model(model: nn.Module, device: torch.device, data_loader: DataLoader,
 
             y_pred = model(X)
 
+            correct_labels_per_batch = (
+                torch.argmax(y_pred, dim=1) == Y).sum().item()
+            correct_labels_per_epoch += correct_labels_per_batch
+            total_labels += X.shape[0]
+
             loss = loss_fn(y_pred, Y)
             running_loss += loss.item()
             loss.backward()
             optimizer.step()
-        epoch_loss = running_loss / len(data_loader)
-        epoch_losses.append((epoch, epoch_loss))
-    for idx, epoch in epoch_losses:
-        print(f'Epoch {idx} -> Loss: {epoch}')
+        epoch_losses.append(running_loss / len(data_loader))
+        epoch_accs.append(float(correct_labels_per_epoch/total_labels))
+    for idx, data in enumerate(zip(epoch_losses, epoch_accs)):
+        loss, acc = data
+        print(f'Epoch: {idx + 1}')
+        print(f'Loss: {loss}')
+        print(f'Acc: {acc}\n')
 
     torch.save(model, 'model.pth')
 
