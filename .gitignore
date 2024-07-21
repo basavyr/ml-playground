@@ -16,3 +16,4 @@ tutorials/training_model/plot.pdf
 tutorials/training_model/runs
 tutorials/bob_net/MNIST
 hugging_face/offline_test/models
+src/optimizing-params/data

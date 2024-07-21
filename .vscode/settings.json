@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "Backpropagation",
+        "optim",
         "softmax",
         "xlabel",
         "ylabel"
