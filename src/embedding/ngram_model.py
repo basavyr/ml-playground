@@ -74,9 +74,6 @@ def train(train_data: str, num_epochs: int, embedding_dim: int, context_size: in
             context_idx = torch.tensor(
                 [word_to_idx[w]for w in context], dtype=torch.long)
 
-            pprint(f'context {context}')
-            pprint(f'context idx: {context_idx}')
-
             y_true = torch.tensor([word_to_idx[target]], dtype=torch.long)
 
             # Forward pass
@@ -99,14 +96,54 @@ def train(train_data: str, num_epochs: int, embedding_dim: int, context_size: in
     torch.save(model, 'model.pth')
 
 
+def test(test_data: str, embedding_dim: int, context_size: int):
+    model = torch.load('model.pth')
+    model.eval()
+
+    loss_function = nn.CrossEntropyLoss()
+
+    words, vocab_size, vocab, word_to_idx, idx_to_word = prepare_data(
+        test_data)
+    ngrams = generate_ngram(words, context_size)
+
+    total_loss = 0
+    n_samples = 0
+    for context, target in ngrams:
+        # Convert context and target to indices
+        context_indices = [word_to_idx[word] for word in context]
+        target_index = word_to_idx[target]
+
+        # Compute the model output
+        with torch.no_grad():
+            output = model(torch.tensor(context_indices, dtype=torch.long))
+
+        # Compute the loss
+        loss = loss_function(output,  torch.tensor(
+            [target_index], dtype=torch.long))
+        total_loss += loss.item()
+        n_samples += 1
+
+    # Calculate average loss
+    avg_loss = total_loss / n_samples
+
+    # calculate the perplexity
+    # formula provided here: http://gluon.ai/chapter_recurrent-neural-networks/language-model.html#perplexity
+    perplexity = torch.exp(torch.tensor(avg_loss)).item()
+    print(f'Avg loss: {avg_loss}')
+    print(f'Perplexity: {perplexity}')
+
+
 if __name__ == "__main__":
 
     train_data = data.train_data
+    test_data = data.test_data
 
     # Hyperparameters
     embedding_dim = 75
     context_size = 10
 
     # Train the model
-    epochs = 1
+    epochs = 100
     train(train_data, epochs, embedding_dim, context_size)
+
+    test(test_data, embedding_dim, context_size)
