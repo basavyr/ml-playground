@@ -51,7 +51,33 @@ if DEBUG_MODE == "1":
 # solution from openai: https://github.com/openai/tiktoken
 
 class Tokenizer():
+    """
+    A tokenizer class that handles character-level tokenization.
+
+    Attributes:
+        vocab (list of str): A list of single-character strings representing the vocabulary.
+        word_to_int (dict): A dictionary mapping each character in the vocabulary to a unique integer index.
+        int_to_word (dict): A dictionary mapping each integer index back to the corresponding character in the vocabulary.
+
+    Methods:
+        __init__(self, vocab):
+            Initializes the Tokenizer with the given vocabulary.
+            Constructs the word-to-int and int-to-word lookup tables.
+    """
+
     def __init__(self, vocab: list[str]):
+        """
+        Initializes the Tokenizer with the given vocabulary.
+
+        Args:
+            vocab (list of str): A list of single-character strings representing the vocabulary.
+
+        Initializes:
+            word_to_int (dict): A dictionary mapping each character in the vocabulary to a unique integer index.
+            int_to_word (dict): A dictionary mapping each integer index back to the corresponding character in the vocabulary.
+        """
+        self.vocab = vocab
+        self.vocab_size = len(vocab)
         self.string_to_idx = {ch: idx for idx, ch in enumerate(vocab)}
         self.idx_to_string = {idx: ch for idx, ch in enumerate(vocab)}
 
