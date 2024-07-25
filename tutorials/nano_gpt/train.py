@@ -169,34 +169,33 @@ def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.T
     return x, y
 
 
-x, y = batch(batch_size, context_length, "train")
-if DEBUG_MODE == "1":
-    print(x)
-    print(y)
-    print(tokenizer.decode(x))
-    print(tokenizer.decode(y))
+def train(model: torch.nn.Module, epochs: int, max_num_tokens: int):
+    if DEBUG_MODE == "1":
+        print(x)
+        print(y)
+        print(tokenizer.decode(x))
+        print(tokenizer.decode(y))
+
+    # load the bigram model onto the device
+    # set an optimizer
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+    for _ in range(epochs):
+        x, y = batch(batch_size, context_length, "train")
+
+        optimizer.zero_grad()
+        # this will be a tensor of batch size, in which every sample in the batch will have dimension `context_length`/`vocabulary_size`
+        # torch.Size([4, 8, 65])
+        # torch.Size([batch_size, context_length, vocab_size])
+        output, loss = model(x, y)
+
+        loss.backward()
+        optimizer.step()
+
+    print(loss)
+    print(tokenizer.decode(model.generate(torch.zeros(
+        (1, 1), dtype=torch.long, device=DEVICE), max_num_tokens)[0].tolist()))
 
 
-for b in range(batch_size):
-    for c in range(context_length):
-        context = x[b, :c+1]
-        target = y[b, c]
-        if DEBUG_MODE == "1":
-            print(f'context: {context.tolist()} target: {target}')
-
-
-# load the bigram model onto the device
 model = llm.BigramLanguageModel(vocab_size).to(DEVICE)
-# set an optimizer
-optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
-
-
-# this will be a tensor of batch size, in which every sample in the batch will have dimension `context_length`/`vocabulary_size`
-# torch.Size([4, 8, 65])
-# torch.Size([batch_size, context_length, vocab_size])
-output, loss = model(x, y)
-
-print(loss)
-
-print(tokenizer.decode(model.generate(torch.zeros(
-    (1, 1), dtype=torch.long, device=DEVICE), 100)[0].tolist()))
+train(model, 20000, 200)
