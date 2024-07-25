@@ -6,7 +6,9 @@ from torch.utils.data import DataLoader
 import torch
 import os
 
-torch.manual_seed(1)
+import llm
+
+torch.manual_seed(1337)
 
 DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if DEBUG is not set
 DEVICE = os.getenv('DEVICE', 'cpu')  # Default to '0' if DEBUG is not set
@@ -120,6 +122,7 @@ if DEBUG_MODE == "1":
     print(input_tensor.shape)
 
 
+# split the data 85-15 in training and test, respectively
 N = int(round(0.85*len(input_tensor)))
 batch_size = 4
 context_length = 8  # also called block size
@@ -140,15 +143,19 @@ test_set = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 # This means that for a provided context c = x1, x2, x3, the target sequence Y follows immediately after the context.
 def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.Tensor, torch.Tensor]:
     """
-    Create a set of (X, Y) pairs for training or testing.
+    - Create a set of (X, Y) pairs for training or testing.
+    - The targets `Y` represent the sequences of characters that should be followed given an input sequence X.
+
+    - Keep in mind that input sequence will be a list of tokens (a tensor of tokens) with a fixed `context_length` that is randomly picked from the input data. There will be `batch_size` such sequences making up the entire batch of X-token-sequences
+    - The Y-token sequences will be essentially created by taking the current offset position and shift by 1-token (character)
 
     Args:
-        batch_size (int): The number of samples in the batch.
-        context_length (int): The length of the context sequence.
-        data_type (str): The type of data to use ('train' or 'test').
+        `batch_size (int)`: The number of samples in the batch.
+        `context_length (int)`: The length of the context sequence.
+        `data_type (str)`: The type of data to use ('train' or 'test').
 
     Returns:
-        Tuple[torch.Tensor, torch.Tensor]: A tuple containing the input (X) and target (Y) tensors.
+        `Tuple[torch.Tensor, torch.Tensor]`: A tuple containing the input (X) and target (Y) tensors.
     """
     data = training_data if data_type == "train" else test_data
 
@@ -164,6 +171,8 @@ def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.T
 
 x, y = batch(batch_size, context_length, "train")
 if DEBUG_MODE == "1":
+    print(x)
+    print(y)
     print(tokenizer.decode(x))
     print(tokenizer.decode(y))
 
@@ -172,4 +181,22 @@ for b in range(batch_size):
     for c in range(context_length):
         context = x[b, :c+1]
         target = y[b, c]
-        print(f'context: {context.tolist()} target: {target}')
+        if DEBUG_MODE == "1":
+            print(f'context: {context.tolist()} target: {target}')
+
+
+# load the bigram model onto the device
+model = llm.BigramLanguageModel(vocab_size).to(DEVICE)
+# set an optimizer
+optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
+
+
+# this will be a tensor of batch size, in which every sample in the batch will have dimension `context_length`/`vocabulary_size`
+# torch.Size([4, 8, 65])
+# torch.Size([batch_size, context_length, vocab_size])
+output, loss = model(x, y)
+
+print(loss)
+
+print(tokenizer.decode(model.generate(torch.zeros(
+    (1, 1), dtype=torch.long, device=DEVICE), 100)[0].tolist()))
