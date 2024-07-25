@@ -82,14 +82,32 @@ class Tokenizer():
         self.idx_to_string = {idx: ch for idx, ch in enumerate(vocab)}
 
     def encode(self, word: str):
+        # the encoder will create a look up table for every character in the vocabulary and map it to a given integer index
         return [self.string_to_idx[idx] for idx in word]
 
-    def decode(self, tokens: list[int]):
-        return "".join(self.idx_to_string[idx] for idx in tokens)
+    def decode(self, tokens: list[int] | torch.Tensor):
+        # the decoder will take a list of integers list[int] and for every integer will need to map to the correct character
+        # supports vectorization
+        if isinstance(tokens, torch.Tensor):
+            tokens = tokens.detach().cpu().numpy().tolist()
+            # check if the tensor is a list of lists of integers (this is to support batch sizes within vectorization)
+            if isinstance(tokens[-1], list):
+                sub_tokens = ["".join(self.idx_to_string[idx]
+                                      for idx in token) for token in tokens]
+                return sub_tokens
+            return "".join(self.idx_to_string[idx] for idx in tokens)
+        else:
+            return "".join(self.idx_to_string[idx] for idx in tokens)
+
+
+vocab, vocab_size = get_vocab(data)
+if DEBUG_MODE == "1":
+    print("".join(vocab))
+    print(vocab_size)
 
 
 tokenizer = Tokenizer(vocab)
+if DEBUG_MODE == "1":
+    print(tokenizer.encode("gicu"))
+    print(tokenizer.decode(tokenizer.encode("gicu")))
 
-# the decoder will take a list of integers list[int] and for every integer will need to map to the correct character
-print(tokenizer.encode("gicu"))
-print(tokenizer.decode(tokenizer.encode("gicu")))
