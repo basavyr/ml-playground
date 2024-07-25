@@ -1,10 +1,15 @@
 # based on the tutorial from Andrew Karpathy
 # source: https://www.youtube.com/watch?v=kCc8FmEb1nY
 
+from typing import Tuple
+from torch.utils.data import DataLoader
+import torch
 import os
 
-DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if DEBUG is not set
+torch.manual_seed(1)
 
+DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if DEBUG is not set
+DEVICE = os.getenv('DEVICE', 'cpu')  # Default to '0' if DEBUG is not set
 
 raw_dataset_url = "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
 
@@ -27,13 +32,6 @@ def get_vocab(input_data: str) -> tuple[list, int]:
     vocab = sorted(list(set(input_data)))
     vocab_size = len(vocab)
     return vocab, vocab_size
-
-
-vocab, vocab_size = get_vocab(data)
-
-if DEBUG_MODE == "1":
-    print("".join(vocab))
-    print(vocab_size)
 
 
 # first we need to tokenize the input strings
@@ -111,3 +109,67 @@ if DEBUG_MODE == "1":
     print(tokenizer.encode("gicu"))
     print(tokenizer.decode(tokenizer.encode("gicu")))
 
+
+# We need to tokenize the input data and transform it into a PyTorch tensor.
+# Tensors in PyTorch are represented as high-dimensional arrays containing real, float, or integer numbers.
+# These tensors are contiguous blocks of data that allow for efficient vectorized calculations.
+input_tensor = torch.tensor(tokenizer.encode(
+    data), dtype=torch.long, device=DEVICE)
+
+if DEBUG_MODE == "1":
+    print(input_tensor.shape)
+
+
+N = int(round(0.85*len(input_tensor)))
+batch_size = 4
+context_length = 8  # also called block size
+
+
+training_data = input_tensor[:N]
+test_data = input_tensor[N:]
+
+# create DataLoader objects
+train_set = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+test_set = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+
+
+# now, we need to create a set of X,Y pairs
+# where X will be a sequence of tokens (i.e., encoded characters from the initial data) of size "context length", meaning that for `context_length=8` we require 8 integer indices, and each index will represent the consecutive characters found in the original dataset.
+# Y will be the target sequence, meaning that Y will represent the tokens that will follow right after each of the tokens from X
+# Given a context sequence x1, x2, x3 from X, Y will represent the subsequent sequence x4, x5, ...
+# This means that for a provided context c = x1, x2, x3, the target sequence Y follows immediately after the context.
+def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Create a set of (X, Y) pairs for training or testing.
+
+    Args:
+        batch_size (int): The number of samples in the batch.
+        context_length (int): The length of the context sequence.
+        data_type (str): The type of data to use ('train' or 'test').
+
+    Returns:
+        Tuple[torch.Tensor, torch.Tensor]: A tuple containing the input (X) and target (Y) tensors.
+    """
+    data = training_data if data_type == "train" else test_data
+
+    offsets = torch.randint(len(data) - context_length, (batch_size,))
+
+    x = torch.stack([data[offset:offset + context_length]
+                    for offset in offsets])
+    y = torch.stack([data[offset + 1:offset + context_length + 1]
+                    for offset in offsets])
+
+    return x, y
+
+
+x, y = batch(batch_size, context_length, "train")
+if DEBUG_MODE == "1":
+    print(tokenizer.decode(x))
+    print(tokenizer.decode(y))
+
+
+for b in range(batch_size):
+    for c in range(context_length):
+        context = x[b, :c+1]
+        target = y[b, c]
+        print(f'context: {context.tolist()} target: {target}')
