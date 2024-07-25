@@ -24,9 +24,9 @@ def get_first_n_sequence(input_data: str, n: int = 100):
 
 
 def get_vocab(input_data: str) -> tuple[list, int]:
-    unique_characters = sorted(list(set(input_data)))
-    vocab_size = len(unique_characters)
-    return unique_characters, vocab_size
+    vocab = sorted(list(set(input_data)))
+    vocab_size = len(vocab)
+    return vocab, vocab_size
 
 
 vocab, vocab_size = get_vocab(data)
@@ -46,17 +46,24 @@ if DEBUG_MODE == "1":
 # this tokenizer is composed of an encoder and decoder parts
 # the encoder will take the character and assign a token -> encode STR_CHAR->INT_INDEX
 # the decoder will take the index and look up on what character it corresponds to -> decode INT_INDEX -> STR_CHAR
+# in essence these will be look-up-tables
+# other tokenizers: https://github.com/google/sentencepiece
+# solution from openai: https://github.com/openai/tiktoken
 
-string_to_idx = {ch: idx for idx, ch in enumerate(vocab)}
-idx_to_string = {idx: ch for idx, ch in enumerate(vocab)}
+class Tokenizer():
+    def __init__(self, vocab: list[str]):
+        self.string_to_idx = {ch: idx for idx, ch in enumerate(vocab)}
+        self.idx_to_string = {idx: ch for idx, ch in enumerate(vocab)}
+
+    def encode(self, word: str):
+        return [self.string_to_idx[idx] for idx in word]
+
+    def decode(self, tokens: list[int]):
+        return "".join(self.idx_to_string[idx] for idx in tokens)
 
 
-def encode(x): return [string_to_idx[idx] for idx in x]
-
-
-def decode(idx_list): return "".join(idx_to_string[idx] for idx in idx_list)
-
+tokenizer = Tokenizer(vocab)
 
 # the decoder will take a list of integers list[int] and for every integer will need to map to the correct character
-print(encode("gicu"))
-print(decode(encode("gicu")))
+print(tokenizer.encode("gicu"))
+print(tokenizer.decode(tokenizer.encode("gicu")))
