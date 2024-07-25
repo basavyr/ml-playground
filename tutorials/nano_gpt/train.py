@@ -11,4 +11,12 @@ with open(input_file, 'r') as reader:
     data = reader.read()
 
 
-print(f'Loaded {len(data)} strings into the buffer')
+def get_first_n_sequence(input_data: str, n: int = 100):
+    """
+    - Prints the first `n` characters of the input sequence in `input_data`
+    """
+    print(f'Loaded {len(data)} strings into the buffer')
+    print(f'First {n} characters:\n{input_data[:n]}')
+
+
+get_first_n_sequence(data, 1000)
