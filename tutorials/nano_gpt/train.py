@@ -124,7 +124,7 @@ if DEBUG_MODE == "1":
 
 # split the data 85-15 in training and test, respectively
 N = int(round(0.85*len(input_tensor)))
-batch_size = 4
+batch_size = 16
 context_length = 8  # also called block size
 
 
@@ -141,7 +141,7 @@ test_set = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 # Y will be the target sequence, meaning that Y will represent the tokens that will follow right after each of the tokens from X
 # Given a context sequence x1, x2, x3 from X, Y will represent the subsequent sequence x4, x5, ...
 # This means that for a provided context c = x1, x2, x3, the target sequence Y follows immediately after the context.
-def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.Tensor, torch.Tensor]:
+def batch(batch_size: int, context_length: int, data_type: str = "train") -> Tuple[torch.Tensor, torch.Tensor]:
     """
     - Create a set of (X, Y) pairs for training or testing.
     - The targets `Y` represent the sequences of characters that should be followed given an input sequence X.
@@ -169,7 +169,28 @@ def batch(batch_size: int, context_length: int, data_type: str) -> Tuple[torch.T
     return x, y
 
 
-def train(model: torch.nn.Module, epochs: int, max_num_tokens: int):
+# using a direct copycat of Andrew's method to evaluate the loss function over a data set
+# source: https://github.com/karpathy/ng-video-lecture/blob/52201428ed7b46804849dea0b3ccf0de9df1a5c3/bigram.py#L47
+def estimate_loss(batch_size: int, context_length: int, num_epochs: int):
+    out = {}
+
+    model.eval()  # do not perform backpropagation
+    with torch.no_grad():
+        for data_type in ['train', 'test']:
+            losses = torch.zeros(num_epochs)
+
+            for k in range(num_epochs):
+                # requires external method TODO: self-contained
+                X, Y = batch(batch_size, context_length, data_type)
+
+                _, loss = model(X, Y)  # only the loss value is needed
+                losses[k] = loss.item()
+            out[data_type] = losses.mean()
+    model.train()  # set the model back into training mode
+    return out
+
+
+def train(model: torch.nn.Module, epochs: int, max_num_tokens: int, batch_size: int, context_length: int):
     if DEBUG_MODE == "1":
         print(x)
         print(y)
@@ -180,7 +201,7 @@ def train(model: torch.nn.Module, epochs: int, max_num_tokens: int):
     # set an optimizer
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3)
 
-    for _ in range(epochs):
+    for idx in range(epochs):
         x, y = batch(batch_size, context_length, "train")
 
         optimizer.zero_grad()
@@ -192,10 +213,14 @@ def train(model: torch.nn.Module, epochs: int, max_num_tokens: int):
         loss.backward()
         optimizer.step()
 
-    print(loss)
+        # if idx % 100 == 0:
+        # losses = estimate_loss(batch_size, context_length, epochs)
+        # print(
+        #     f"step {idx}: train loss {losses['train']:.4f}, val loss {losses['test']:.4f}")
+    print(loss.item())
     print(tokenizer.decode(model.generate(torch.zeros(
         (1, 1), dtype=torch.long, device=DEVICE), max_num_tokens)[0].tolist()))
 
 
 model = llm.BigramLanguageModel(vocab_size).to(DEVICE)
-train(model, 20000, 200)
+train(model, 3000, 300, batch_size, context_length)
