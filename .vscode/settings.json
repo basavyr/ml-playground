@@ -12,6 +12,7 @@
         "optim",
         "relu",
         "softmax",
+        "unsqueeze",
         "xlabel",
         "ylabel"
     ]
