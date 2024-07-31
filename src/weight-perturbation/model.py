@@ -16,6 +16,9 @@ class MYF(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):
+        # this method will evaluate the gradient of the output loss function with respect to the input
+        # if the input is x and the output model provides a function y=f(x)=5*x, then the gradient will need to return df/dx=5
+        # typically, the gradient of the loss function w.r.t. the output is known, and then one can evaluate the gradient of the loss function w.r.t. the input x by applying the chain rule, i.e., dL/dx = dL/dy * dy/dx
         input, = ctx.saved_tensors
         return grad_output * 5
 
@@ -48,13 +51,15 @@ def train(model, num_epochs, x, y_true):
         loss = loss_fn(y_pred, y_true)
         loss.backward()
         optimizer.step()
-        if (epoch+1) % 10 == 0:
+        if (epoch+1) % 100 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item():.4f}')
 
     torch.save(model, "model.pth")
 
 
 def evaluate(model, n_samples, x_size):
+
+    model = torch.load(f'model.pth')
     loss_fn = nn.MSELoss()
 
     model.eval()
@@ -65,24 +70,14 @@ def evaluate(model, n_samples, x_size):
 
         y_pred = model(x)
 
-        print(y_pred)
-        print(y_true)
         loss = loss_fn(y_pred, y_true)
-        print(f'Loss: {loss.item()}')
-
-        # model.linear1.weight[1, 0] = model.linear1.weight[1, 0]+0.1
-        model.linear1.weight += 0.02
-        y_pred = model(x)
-        print(y_pred)
-        print(y_true)
-        loss = loss_fn(y_pred, y_true)
-        print(f'Loss: {loss.item()}')
+    print(f'Loss: {loss.item()}')
 
 
 if __name__ == "__main__":
 
     n_samples = 10
-    x_size = 1
+    x_size = 2
     X_train = torch.randint(0, 100, (n_samples, x_size), dtype=torch.float32)
     Y_train = 5 * X_train
 
@@ -102,5 +97,7 @@ if __name__ == "__main__":
     #     losses.append({"beta": beta, "loss": loss})
     #     print({"beta": beta, "loss": loss})
 
-    loss = train(model, 250, X_train, Y_train)
+    import os
+    if not os.path.exists('model.pth'):
+        loss = train(model, 5000, X_train, Y_train)
     evaluate(model, n_eval_samples, x_size)
