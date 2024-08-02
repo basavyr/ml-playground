@@ -5,14 +5,21 @@ DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if DEBUG is not set
 
 
 class BigramLanguageModel(torch.nn.Module):
-    def __init__(self, vocab_size: int):
+    def __init__(self, vocab_size: int, n_embed: int, block_size: int):
         super(BigramLanguageModel, self).__init__()
         self.vocab_size = vocab_size
-        self.embed = torch.nn.Embedding(
-            vocab_size, vocab_size)
+
+        # this embedding is made based on the identity of the tokens
+        self.token_embeddings = torch.nn.Embedding(vocab_size, n_embed)
+
+        self.position_embeddings = torch.nn.Embedding(
+            block_size, n_embed)  # embedding based on the position of the table
+
+        self.fake_logits = torch.nn.Linear(n_embed, vocab_size)
 
     def forward(self, tokens: torch.Tensor, targets: torch.Tensor = None):
-        logits = self.embed(tokens)
+        token_embeddings = self.token_embeddings(tokens)
+        logits = self.fake_logits(token_embeddings)
         if targets is None:
             loss = None
         else:
