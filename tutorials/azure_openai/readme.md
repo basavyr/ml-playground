@@ -1,0 +1,27 @@
+# Use Azure OpenAI from Python3 applications
+
+This is a guide on how to configure a python3 script to access the Azure Open AI service directly though its API.
+
+Using this implementation will alow a user to interact with AI models (known as deployments) through the API.
+
+1. First step is to create a [Model deployment](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/deployment-types) in the Azure Open AI studio. See image below: ![alt text](images/image.png)
+2. Once the model is deployed, you can view its settings: ![alt text](images/image-1.png)
+3. Take the endpoint and the API Key, these will be required in order to develop the Python3 app. These can be saved into an `.env` file for example, right next to the Python3 code.
+
+```text
+AZURE_OPENAI_APIKEY=<apikey>
+AZURE_OPENAI_ENDPOINT=https://<deployment>
+```
+
+3. Navigate inside `azure.py` script and change the content in `MESSAGE` variable, as this will be used in the full prompt object that is managed by `prompt` method.
+
+```python
+MESSAGE = "Anything you want" # <--------- change this
+payload = prompt(MESSAGE)
+```
+
+4. Execute the `run.sh` script
+
+## Quickstart: Get started generating text using Azure OpenAI Service
+
+Full guide [here](https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart?pivots=programming-language-python&tabs=command-line%2Cpython-new).
