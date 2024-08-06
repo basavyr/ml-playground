@@ -7,6 +7,7 @@
         "localdata",
         "logsoftmax",
         "Morphence",
+        "multinomial",
         "NGRAM",
         "ngrams",
         "optim",
