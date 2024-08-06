@@ -20,3 +20,5 @@ src/optimizing-params/data
 src/embedding/__pycache__/
 
 tutorials/nano_gpt/__pycache__/
+
+tutorials/azure_openai/.env
