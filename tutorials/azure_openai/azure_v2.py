@@ -4,6 +4,16 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 
 
+def load_env():
+    load_dotenv()
+    api_key = os.environ.get("AZURE_OPENAI_APIKEY", None)
+    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", None)
+    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT_2", None)
+    deployment = os.environ.get(
+        "AZURE_OPENAI_DEPLOYMENT", "gpt-4o")  # default to gpt-4o
+    return api_key, api_version, endpoint, deployment
+
+
 class AzureInterface:
     def __init__(self, api_key: str, api_version: str, azure_endpoint: str, deployment: str):
         self.api_key = api_key
@@ -55,14 +65,7 @@ class AzureInterface:
 
 
 if __name__ == "__main__":
-    load_dotenv()
-
-    api_key = os.environ.get("AZURE_OPENAI_APIKEY", None)
-    api_version = os.environ.get("AZURE_OPENAI_API_VERSION", None)
-    endpoint = os.environ.get("AZURE_OPENAI_ENDPOINT_2", None)
-    deployment = os.environ.get(
-        "AZURE_OPENAI_DEPLOYMENT", "gpt-4o")  # default to gpt-4o
-
+    api_key, api_version, endpoint, deployment = load_env()
     # create the azure AzureOpenAI interface in order to connect to the model deployment
     az = AzureInterface(api_key, api_version, endpoint, deployment)
 
