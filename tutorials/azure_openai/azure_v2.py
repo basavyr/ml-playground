@@ -32,16 +32,17 @@ class AzureInterface:
         return client
 
     @staticmethod
-    def generate_prompt_message(user_input: str = "Hey there! How are you?", system_input: str = "You are a helpful assistant.") -> list[dict]:
+    def generate_prompt_message(role: str, content: str, system_input: str = "You are a helpful assistant.") -> list[dict]:
         """
-        Generates a list of dictionaries to be used as a prompt for a model. Each dictionary represents a message from either the system or the user.
+        Generates a list of dictionaries to be used as a prompt for a model. Each dictionary represents a message from either the system or a specified role.
 
         Args:
-            user_input (str): The message from the user. Defaults to "Hey there! How are you?".
+            role (str): The role of the message sender (e.g., 'user', 'assistant').
+            content (str): The message content for the specified role.
             system_input (str): The message from the system. Defaults to "You are a helpful assistant.".
 
         Returns:
-            list[dict]: A list of dictionaries with the roles 'system' and 'user' and their corresponding messages.
+            list[dict]: A list of dictionaries with the roles 'system' and the specified role and their corresponding messages.
 
         Example:
             [
@@ -51,11 +52,10 @@ class AzureInterface:
         """
         return [
             {"role": "system", "content": system_input.strip()},
-            {"role": "user", "content": user_input.strip()}
+            {"role": role, "content": content.strip()}
         ]
 
-    def create_chat_completion(self, user_input: str, max_tokens: int = 1337, temperature: float = 0.45):
-        messages = AzureInterface.generate_prompt_message(user_input)
+    def create_chat_completion(self, messages: list[dict], max_tokens: int = 1337, temperature: float = 0.45):
         response = self.client.chat.completions.create(
             messages=messages,
             model=self.deployment,
@@ -66,8 +66,10 @@ class AzureInterface:
 
 if __name__ == "__main__":
     api_key, api_version, endpoint, deployment = load_env()
+
     # create the azure AzureOpenAI interface in order to connect to the model deployment
     az = AzureInterface(api_key, api_version, endpoint, deployment)
 
-    az.create_chat_completion(
-        "give me a simple python3 script that will help me interact with you")
+    message = az.generate_prompt_message(
+        "user", "give me a simple python3 script that will help me interact with you")
+    az.create_chat_completion(message)
