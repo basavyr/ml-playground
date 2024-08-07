@@ -1,5 +1,6 @@
 {
     "cSpell.words": [
+        "APIKEY",
         "Backpropagation",
         "bigram",
         "bigrams",
@@ -10,6 +11,7 @@
         "multinomial",
         "NGRAM",
         "ngrams",
+        "OPENAI",
         "optim",
         "relu",
         "softmax",
