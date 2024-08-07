@@ -22,6 +22,21 @@ payload = prompt(MESSAGE)
 
 4. Execute the `run.sh` script
 
+### Updated client interface
+
+Based on the [official Azure documentation](https://learn.microsoft.com/en-us/azure/ai-services/openai/tutorials/fine-tune?tabs=python-new%2Ccommand-line), the script `azure_v2.py` contains an alternative implementation that allows a user to interact with the models that are deployed in their Azure OpenAI instance.
+
+Keep in mind that this version will require the following environment variables to be declared in the `.env` file:
+```text
+AZURE_OPENAI_APIKEY
+AZURE_OPENAI_ENDPOINT
+AZURE_OPENAI_ENDPOINT_2
+AZURE_OPENAI_DEPLOYMENT
+AZURE_OPENAI_API_VERSION
+```
+
+where `AZURE_OPENAI_ENDPOINT_2` will only contain the base URL of the endpoint, e.g., `https://deployment1.openai.azure.com/`. Make sure to include the trailing "/" at the end.
+
 ## Quickstart: Get started generating text using Azure OpenAI Service
 
 Full guide [here](https://learn.microsoft.com/en-us/azure/ai-services/openai/quickstart?pivots=programming-language-python&tabs=command-line%2Cpython-new).
