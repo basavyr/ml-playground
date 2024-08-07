@@ -3,4 +3,4 @@ set -a
 source .env
 set +a
 
-python3 azure.py
+python3 llm_trainer.py
