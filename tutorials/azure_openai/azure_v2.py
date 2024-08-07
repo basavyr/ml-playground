@@ -61,7 +61,17 @@ class AzureInterface:
             model=self.deployment,
             max_tokens=max_tokens,
             temperature=temperature)
-        print(response.choices[0].message.content)
+        return response.choices[0].message.content
+
+    def create_message_list(self, roles: str | list[str], messages: list[str]):
+        if isinstance(roles, str):
+            _list = [{"role": roles, "content": message}
+                     for message in messages[1:]]
+            return [messages[0]].extend(_list)
+        elif isinstance(roles, list):
+            _list = [{"role": role, "content": message}
+                     for role, message in zip(roles[1:], messages[1:])]
+            return [messages[0]].extend(_list)
 
 
 if __name__ == "__main__":
@@ -72,4 +82,5 @@ if __name__ == "__main__":
 
     message = az.generate_prompt_message(
         "user", "give me a simple python3 script that will help me interact with you")
-    az.create_chat_completion(message)
+    prompt = az.create_chat_completion(message)
+    print(prompt)
