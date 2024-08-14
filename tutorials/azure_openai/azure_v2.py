@@ -56,6 +56,44 @@ class AzureInterface:
         ]
 
     def create_chat_completion(self, messages: list[dict], max_tokens: int = 1337, temperature: float = 0.45):
+        """
+        Generates a chat-based completion using the specified parameters.
+
+        This method interacts with an AI language model to generate a response based on a sequence of input messages.
+        The function utilizes the chat completion API of the client's deployed model, allowing fine-tuning of the response
+        length and creativity through the `max_tokens` and `temperature` parameters.
+
+        Args:
+            messages (list[dict]): A list of message dictionaries representing the conversation history.
+                Each dictionary should typically contain a 'role' key with a value of either 'user' or 'assistant',
+                and a 'content' key containing the message text.
+            max_tokens (int, optional): The maximum number of tokens the model should generate in the response. 
+                Tokens can be as short as one character or as long as one word. Default is 1337.
+            temperature (float, optional): A value that controls the randomness of the output. 
+                Lower values (e.g., 0.2) make the output more deterministic and focused, while higher values (e.g., 0.8) 
+                increase creativity and variety. Default is 0.45.
+
+        Returns:
+            str: The generated text content of the response, as produced by the model.
+
+        Example:
+            messages = [
+                {"role": "user", "content": "What is the capital of France?"},
+                {"role": "assistant", "content": "The capital of France is Paris."}
+            ]
+            response = create_chat_completion(messages, max_tokens=50, temperature=0.7)
+            print(response)  # Output might be "Paris is the capital city of France, known for its culture, art, and history."
+
+        Raises:
+            Any exceptions raised by the underlying API client will propagate through this method.
+
+        Notes:
+            - The `max_tokens` parameter includes both input and output tokens, so the effective length of the generated
+            response may be slightly shorter than this value.
+            - Adjusting the `temperature` parameter allows you to balance between predictable and creative responses,
+            depending on the use case.
+
+        """
         response = self.client.chat.completions.create(
             messages=messages,
             model=self.deployment,
