@@ -55,7 +55,7 @@ class AzureInterface:
             {"role": role, "content": content.strip()}
         ]
 
-    def create_chat_completion(self, messages: list[dict], max_tokens: int = 1337, temperature: float = 0.45):
+    def create_chat_completion(self, messages: list[dict], max_tokens: int = 4096, temperature: float = 0.45):
         """
         Generates a chat-based completion using the specified parameters.
 
