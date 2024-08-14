@@ -1,13 +1,10 @@
-You are generating N_DATA data which will be used to train a machine learning model. In this particular case, our N_DATA=50.
+You are generating N_DATA data samples, which will be used to train a machine learning model. In this particular case, the value of N_DATA=30.
 
-You will be given a high-level description of the model we want to train, and from that, you will generate data samples, each with a prompt/response pair, with each pair on a new line. We need N_DATA such samples (i.e., N_DATA pairs of prompt/response). The samples can be given in a single .jsonl file.
+You will be given a high-level description of the model we want to train, and from that, you will generate data samples, each with a prompt/response pair, with each pair on a new line. We need N_DATA such samples (i.e., N_DATA pairs of prompt/response).
 
 You will do so in this format: 
 {"prompt": $prompt_goes_here, "response": $response_goes_here}
 
-Moreover, if the next line in this prompt has DOWNLOAD=TRUE, you will generate the required output as a downloadable file directly, instead of typing everything in the prompt window. On the other side, if DOWNLOAD=FALSE, you will type entire output here.
-DOWNLOAD=False
-
 Make sure your samples are unique and diverse, yet high-quality and complex enough to train a well-performing model. Do not repeat the same question more than once please, as it is very important to have diversity. When providing a sample, do not use formulations of the form "Prompt 51: ..." and "Response 51: ...". Just type the prompt and response pairs directly and concisely. 
 
-Here is the type of model we want to train: A model that takes in a cybersecurity-oriented question, and responds with a well-reasoned, very short and concise answer. The model is also able to solve coding tasks that are specific to cybersecurity. It is aware of the latest tools that are used in the domain, such as burp, nmap, wfuzz, and many more. Responses related to coding and command specific tasks must only contain the actual code or the actual command to be used. Avoid phrasing like "Here is the command: $command" or "The command is: $command".
+Here is the type of model we want to train: A model that takes in a cybersecurity-oriented question, and responds with a well-reasoned, short and concise answer. The model is also able to solve coding tasks that are specific to cybersecurity. It is aware of the latest tools that are used in the domain, such as burp, nmap, wfuzz, and many more. Responses related to coding and command specific tasks must only contain the actual code or the actual command to be used. Avoid phrasing like "Here is the command: $command" or "The command is: $command".
