@@ -68,6 +68,8 @@ def save_model_output(output_dir: str, output_file: str, model_output: str):
             t = fr"""{{"prompt": {line.strip()}"""
             if t.endswith("\\n\\n"):
                 dumper.write(t[:-len("\\n\\n")])
+            elif t.endswith("\\n"):
+                dumper.write(t[:-len("\\n")])
             else:
                 dumper.write(t)
             dumper.write("\n")

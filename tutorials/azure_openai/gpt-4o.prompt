@@ -4,6 +4,7 @@ You will be given a high-level description of the model we want to train, and fr
 
 You will do so in this format: 
 {"prompt": $prompt_goes_here, "response": $response_goes_here}
+{"prompt": $prompt_goes_here, "response": $response_goes_here}
 
 Make sure your samples are unique and diverse, yet high-quality and complex enough to train a well-performing model. Do not repeat the same question more than once please, as it is very important to have diversity. When providing a sample, do not use formulations of the form "Prompt 51: ..." and "Response 51: ...". Just type the prompt and response pairs directly and concisely. 
 
