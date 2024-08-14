@@ -8,10 +8,6 @@ You will do so in this format:
 Moreover, if the next line in this prompt has DOWNLOAD=TRUE, you will generate the required output as a downloadable file directly, instead of typing everything in the prompt window. On the other side, if DOWNLOAD=FALSE, you will type entire output here.
 DOWNLOAD=TRUE
 
-Make sure your samples are unique and diverse, yet high-quality and complex enough to train a well-performing model. Do not repeat the same question more than once please, as it is very important to have diversity. When providing a sample, do not use formulations of the form "Prompt 51: ..." and "Response 51: ...". Just type the prompt and response pairs directly and concisely.
+Make sure your samples are unique and diverse, yet high-quality and complex enough to train a well-performing model. Do not repeat the same question more than once please, as it is very important to have diversity. When providing a sample, do not use formulations of the form "Prompt 51: ..." and "Response 51: ...". Just type the prompt and response pairs directly and concisely. 
 
-Here is the type of model we want to train: A model that takes in a cybersecurity-oriented question, and responds with a well-reasoned, very short and concise answer. The model is also able to solve coding tasks that are specific to cybersecurity. It is aware of the latest tools that are used in the domain, such as burp, nmap, wfuzz, and many more. Responses related to coding and command specific tasks must only contain the actual code or the actual command to be used.
-
-You will have to do this N_REPS times, meaning that you will generate a total of N_REPS .jsonl files with N_DATA prompt/response pairs in each file. BUT PLEASE PAY ATTENTION: every file must have completely different prompt/response data than the previous files. In this particular case, our N_REPS=1.
-
-Obviously, if N_REPS>1 and DOWNLOAD=TRUE, then that means you should provide a downloadable .zip file in which N_REPS files must be.
+Here is the type of model we want to train: A model that takes in a cybersecurity-oriented question, and responds with a well-reasoned, very short and concise answer. The model is also able to solve coding tasks that are specific to cybersecurity. It is aware of the latest tools that are used in the domain, such as burp, nmap, wfuzz, and many more. Responses related to coding and command specific tasks must only contain the actual code or the actual command to be used. Avoid phrasing like "Here is the command: $command" or "The command is: $command".
