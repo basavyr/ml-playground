@@ -3,6 +3,7 @@ import pandas as pd
 import time
 
 import azure_v2 as az2
+import datetime
 
 
 def process_examples(prev_examples: list):
@@ -53,18 +54,50 @@ def get_system_prompt(system_prompt_file: str):
             return data
 
 
-def main():
-    system_prompt_file = "gpt-4o.prompt"
-    system_prompt = get_system_prompt(system_prompt_file)
+def save_model_output(output_dir: str, output_file: str, model_output: str):
+    import json
+    c_date = str(datetime.datetime.now().date())
+    c_time = str(datetime.datetime.now().time())
+    file_suffix = f'{c_date}-{c_time}'[:-7]
+    with open(f'{output_dir}/{output_file}-{file_suffix}.jsonl', 'w') as dumper:
+        # model_output = model_output[len(
+        #     "```jsonl\n"):-len("\n```\n")].split(r"""{"prompt":""")
+        model_output = model_output.replace(
+            "\n", "\\n").split(r"""{"prompt":""")
+        for line in model_output[1:]:
+            t = fr"""{{"prompt": {line.strip()}"""
+            if t.endswith("\\n\\n"):
+                dumper.write(t[:-len("\\n\\n")])
+            else:
+                dumper.write(t)
+            dumper.write("\n")
+
+
+def generate_output_file(output_dir: str, system_prompt: str):
+    model_output_file = "az-output"
+
+    messages = generate_messages(system_prompt)
 
     api_key, api_version, endpoint, deployment = az2.load_env()
     az = az2.AzureInterface(api_key, api_version, endpoint, deployment)
 
-    start = time.time()
-    messages = generate_messages(system_prompt)
     example = az.create_chat_completion(messages)
 
-    print(example)
+    save_model_output(output_dir, model_output_file, example)
+
+
+def main():
+    volumes = "./volumes"
+
+    system_prompt_file = "gpt-4o.prompt"
+    system_prompt = get_system_prompt(system_prompt_file)
+
+    start = time.time()
+
+    max_iter = 2
+    for idx in range(max_iter):
+        generate_output_file(volumes, system_prompt)
+        print(f'Generated {idx+1}/{max_iter} output files')
     print(
         f'Generating output: {round(time.time()-start,2)} s')
 
