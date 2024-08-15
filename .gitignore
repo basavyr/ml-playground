@@ -27,3 +27,4 @@ tutorials/azure_openai/__pycache__/
 
 tutorials/azure_openai/train.jsonl
 tutorials/azure_openai/volumes
+tutorials/azure_openai/dataset.jsonl
