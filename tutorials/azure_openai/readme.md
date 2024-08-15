@@ -7,20 +7,16 @@ Using this implementation will alow a user to interact with AI models (known as 
 1. First step is to create a [Model deployment](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/deployment-types) in the Azure Open AI studio. See image below: ![alt text](images/image.png)
 2. Once the model is deployed, you can view its settings: ![alt text](images/image-1.png)
 3. Take the endpoint and the API Key, these will be required in order to develop the Python3 app. These can be saved into an `.env` file for example, right next to the Python3 code.
-
 ```text
 AZURE_OPENAI_APIKEY=<apikey>
 AZURE_OPENAI_ENDPOINT=https://<deployment>
 ```
-
-3. Navigate inside `azure.py` script and change the content in `MESSAGE` variable, as this will be used in the full prompt object that is managed by `prompt` method.
-
+3. Navigate inside [`azure.py`](./azure.py) script and change the value of `MESSAGE`, as this will be used in the prompt object managed by the `prompt` method.
 ```python
 MESSAGE = "Anything you want" # <--------- change this
 payload = prompt(MESSAGE)
 ```
-
-4. Execute the `run.sh` script
+4. Execute `azure.py`.
 
 ### Updated client interface
 
