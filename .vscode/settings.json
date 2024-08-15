@@ -4,6 +4,7 @@
         "Backpropagation",
         "bigram",
         "bigrams",
+        "dotenv",
         "Goodfellow",
         "localdata",
         "logsoftmax",

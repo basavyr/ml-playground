@@ -1,35 +1,9 @@
-import random
+
 import pandas as pd
 import time
 
 import azure_v2 as az2
 import datetime
-
-
-def process_examples(prev_examples: list):
-    # Initialize lists to store prompts and responses
-    prompts = []
-    responses = []
-
-    # Parse out prompts and responses from examples
-    for example in prev_examples:
-        try:
-            split_example = example.split('-----------')
-            prompts.append(split_example[1].strip())
-            responses.append(split_example[3].strip())
-        except:
-            pass
-
-    # Create a DataFrame
-    df = pd.DataFrame({
-        'prompt': prompts,
-        'response': responses
-    })
-
-    df.head()
-
-    # Save the dataframes to .jsonl files
-    df.to_json('train.jsonl', orient='records', lines=True)
 
 
 def generate_messages(system_prompt: str | None):
@@ -55,23 +29,19 @@ def get_system_prompt(system_prompt_file: str):
 
 
 def save_model_output(output_dir: str, output_file: str, model_output: str):
-    import json
-    c_date = str(datetime.datetime.now().date())
-    c_time = str(datetime.datetime.now().time())
-    file_suffix = f'{c_date}-{c_time}'[:-7]
+    now = datetime.datetime.now()
+    file_suffix = f'{now.date()}-{now.time()}'[:-7]
     with open(f'{output_dir}/{output_file}-{file_suffix}.jsonl', 'w') as dumper:
-        # model_output = model_output[len(
-        #     "```jsonl\n"):-len("\n```\n")].split(r"""{"prompt":""")
         model_output = model_output.replace(
-            "\n", "\\n").split(r"""{"prompt":""")
-        for line in model_output[1:]:
-            t = fr"""{{"prompt": {line.strip()}"""
-            if t.endswith("\\n\\n"):
-                dumper.write(t[:-len("\\n\\n")])
-            elif t.endswith("\\n"):
-                dumper.write(t[:-len("\\n")])
+            "\n", "\\n").split(r"""{"prompt":""")[1:]
+        for line in model_output:
+            reconstructed_line = fr"""{{"prompt": {line.strip()}"""
+            if reconstructed_line.endswith("\\n\\n"):
+                dumper.write(reconstructed_line[:-len("\\n\\n")])
+            elif reconstructed_line.endswith("\\n"):
+                dumper.write(reconstructed_line[:-len("\\n")])
             else:
-                dumper.write(t)
+                dumper.write(reconstructed_line)
             dumper.write("\n")
 
 
@@ -94,14 +64,20 @@ def main():
     system_prompt_file = "gpt-4o.prompt"
     system_prompt = get_system_prompt(system_prompt_file)
 
+    if system_prompt is None:
+        print(
+            f'No prompt file available. Please make sure < {system_prompt_file} > is in the correct path.')
+        exit(1)
+
     start = time.time()
 
-    max_iter = 2
-    for idx in range(max_iter):
+    OUTPUT_FILES = 5  # change the number of output files with data that should be generated
+
+    for idx in range(OUTPUT_FILES):
         generate_output_file(volumes, system_prompt)
-        print(f'Generated {idx+1}/{max_iter} output files')
+        print(f'Generated {idx+1}/{OUTPUT_FILES} output files')
     print(
-        f'Generating output: {round(time.time()-start,2)} s')
+        f'Generating {OUTPUT_FILES} files took: {round(time.time()-start,2)} s')
 
 
 if __name__ == "__main__":
