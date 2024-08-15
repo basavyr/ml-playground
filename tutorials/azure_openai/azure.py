@@ -47,7 +47,7 @@ class AzureChat:
             return resp_message
         return None
 
-    def generate_payload(self, user_input: str = "Hey there! Where are you hosted and by which company?", temperature: float = 0.45, max_tokens: int = 1200) -> dict:
+    def generate_payload(self, user_input: str = "Hey there! How are you?", temperature: float = 0.45, max_tokens: int = 4096) -> dict:
         """
         - uses the `user_input` string to initialize the payload used in the `POST` request to the Azure OpenAI deployment
         - the payload will contain a `messages` dictionary, in which `system`, `user`, and `assistant` contents will be configured
