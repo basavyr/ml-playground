@@ -225,6 +225,4 @@ def train(model: torch.nn.Module, epochs: int, max_num_tokens: int, batch_size: 
 
 model = llm.BigramLanguageModel(
     vocab_size, batch_size, context_length).to(DEVICE)
-
-
 train(model, 5000, 300, batch_size, context_length)

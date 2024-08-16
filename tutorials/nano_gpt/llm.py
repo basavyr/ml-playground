@@ -45,6 +45,22 @@ class MultiHeadAttention(torch.nn.Module):
         return torch.cat([h(x) for h in self.heads], dim=-1)
 
 
+class FeedForward(torch.nn.Module):
+    """ a simple linear layer followed by a non-linearity """
+
+    def __init__(self, n_embd):
+        super(FeedForward, self).__init__()
+        self.net = torch.nn.Sequential(
+            torch.nn.Linear(n_embd, 4 * n_embd),
+            torch.nn.ReLU(),
+            torch.nn.Linear(4 * n_embd, n_embd),
+            torch.nn.Dropout(0.0),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
 class BigramLanguageModel(torch.nn.Module):
     def __init__(self, vocab_size: int, embedding_dim: int, block_size: int):
         super(BigramLanguageModel, self).__init__()
@@ -53,6 +69,8 @@ class BigramLanguageModel(torch.nn.Module):
         self.self_attn = Head(embedding_dim, embedding_dim, block_size)
         self.self_attn_heads = MultiHeadAttention(
             4, embedding_dim//4, embedding_dim, block_size)
+
+        self.ffwd = FeedForward(embedding_dim)
 
         # embedding based on the identity of the tokens
         self.token_embeddings = torch.nn.Embedding(vocab_size, embedding_dim)
@@ -78,6 +96,7 @@ class BigramLanguageModel(torch.nn.Module):
         # size: (B,T,C)
         x = token_embeddings + position_embeddings
         x = self.self_attn_heads(x)
+        x = self.ffwd(x)
 
         # size: (B,T,vocab_size)
         logits = self.lm_head(x)
