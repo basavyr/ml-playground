@@ -6,6 +6,7 @@
         "bigram",
         "bigrams",
         "dotenv",
+        "ffwd",
         "Goodfellow",
         "localdata",
         "logsoftmax",

@@ -40,20 +40,22 @@ class MultiHeadAttention(torch.nn.Module):
         super(MultiHeadAttention, self).__init__()
         self.heads = torch.nn.ModuleList(
             [Head(embedding_dim, head_size, block_size) for _ in range(num_heads)])
+        # introduce projection
+        self.proj = torch.nn.Linear(num_heads*head_size, embedding_dim)
 
     def forward(self, x):
-        return torch.cat([h(x) for h in self.heads], dim=-1)
+        return self.proj(torch.cat([h(x) for h in self.heads], dim=-1))
 
 
 class FeedForward(torch.nn.Module):
     """ a simple linear layer followed by a non-linearity """
 
-    def __init__(self, n_embd):
+    def __init__(self, embedding_dim: int):
         super(FeedForward, self).__init__()
         self.net = torch.nn.Sequential(
-            torch.nn.Linear(n_embd, 4 * n_embd),
+            torch.nn.Linear(embedding_dim, 4 * embedding_dim),
             torch.nn.ReLU(),
-            torch.nn.Linear(4 * n_embd, n_embd),
+            torch.nn.Linear(4 * embedding_dim, embedding_dim),
             torch.nn.Dropout(0.0),
         )
 
@@ -61,16 +63,39 @@ class FeedForward(torch.nn.Module):
         return self.net(x)
 
 
+class Block(torch.nn.Module):
+    def __init__(self, embedding_dim: int, num_heads: int, block_size: int):
+        super(Block, self).__init__()
+        head_size = embedding_dim // num_heads
+        self.self_attn = MultiHeadAttention(
+            num_heads, head_size, embedding_dim, block_size)
+        self.ffwd = FeedForward(embedding_dim)
+
+    def forward(self, x):
+        # residual blocks: https://towardsdatascience.com/residual-blocks-building-blocks-of-resnet-fd90ca15d6ec
+        x = x + self.self_attn(x)
+        x = x + self.ffwd(x)
+        return x
+
+
 class BigramLanguageModel(torch.nn.Module):
     def __init__(self, vocab_size: int, embedding_dim: int, block_size: int):
         super(BigramLanguageModel, self).__init__()
         self.vocab_size = vocab_size
         self.block_size = block_size
+
         self.self_attn = Head(embedding_dim, embedding_dim, block_size)
+
         self.self_attn_heads = MultiHeadAttention(
             4, embedding_dim//4, embedding_dim, block_size)
 
         self.ffwd = FeedForward(embedding_dim)
+
+        self.blocks = torch.nn.Sequential(
+            Block(embedding_dim, 4, block_size),
+            Block(embedding_dim, 4, block_size),
+            Block(embedding_dim, 4, block_size),
+        )
 
         # embedding based on the identity of the tokens
         self.token_embeddings = torch.nn.Embedding(vocab_size, embedding_dim)
@@ -95,8 +120,11 @@ class BigramLanguageModel(torch.nn.Module):
 
         # size: (B,T,C)
         x = token_embeddings + position_embeddings
-        x = self.self_attn_heads(x)
-        x = self.ffwd(x)
+
+        # x = self.self_attn_heads(x)
+        # x = self.ffwd(x)
+
+        x = self.blocks(x)
 
         # size: (B,T,vocab_size)
         logits = self.lm_head(x)
