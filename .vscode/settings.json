@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "APIKEY",
+        "arange",
         "Backpropagation",
         "bigram",
         "bigrams",
@@ -14,9 +15,12 @@
         "ngrams",
         "OPENAI",
         "optim",
+        "randn",
         "relu",
         "softmax",
+        "tril",
         "unsqueeze",
+        "xbow",
         "xlabel",
         "ylabel"
     ]
