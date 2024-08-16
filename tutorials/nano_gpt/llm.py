@@ -31,12 +31,28 @@ class Head(torch.nn.Module):
         return w @ v
 
 
+class MultiHeadAttention(torch.nn.Module):
+    """
+    - multi-head implementation of the attention mechanism (scaled dot-product)
+    """
+
+    def __init__(self, num_heads: int, head_size: int, embedding_dim: int, block_size: int):
+        super(MultiHeadAttention, self).__init__()
+        self.heads = torch.nn.ModuleList(
+            [Head(embedding_dim, head_size, block_size) for _ in range(num_heads)])
+
+    def forward(self, x):
+        return torch.cat([h(x) for h in self.heads], dim=-1)
+
+
 class BigramLanguageModel(torch.nn.Module):
     def __init__(self, vocab_size: int, embedding_dim: int, block_size: int):
         super(BigramLanguageModel, self).__init__()
         self.vocab_size = vocab_size
         self.block_size = block_size
         self.self_attn = Head(embedding_dim, embedding_dim, block_size)
+        self.self_attn_heads = MultiHeadAttention(
+            4, embedding_dim//4, embedding_dim, block_size)
 
         # embedding based on the identity of the tokens
         self.token_embeddings = torch.nn.Embedding(vocab_size, embedding_dim)
@@ -61,7 +77,7 @@ class BigramLanguageModel(torch.nn.Module):
 
         # size: (B,T,C)
         x = token_embeddings + position_embeddings
-        x = self.self_attn(x)
+        x = self.self_attn_heads(x)
 
         # size: (B,T,vocab_size)
         logits = self.lm_head(x)
