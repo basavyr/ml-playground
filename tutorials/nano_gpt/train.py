@@ -227,4 +227,4 @@ model = llm.BigramLanguageModel(
     vocab_size, batch_size, context_length).to(DEVICE)
 
 
-train(model, 3000, 300, batch_size, context_length)
+train(model, 5000, 300, batch_size, context_length)
