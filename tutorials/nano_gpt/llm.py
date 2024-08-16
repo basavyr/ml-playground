@@ -70,11 +70,13 @@ class Block(torch.nn.Module):
         self.self_attn = MultiHeadAttention(
             num_heads, head_size, embedding_dim, block_size)
         self.ffwd = FeedForward(embedding_dim)
+        self.ln1 = torch.nn.LayerNorm(embedding_dim)
+        self.ln2 = torch.nn.LayerNorm(embedding_dim)
 
     def forward(self, x):
         # residual blocks: https://towardsdatascience.com/residual-blocks-building-blocks-of-resnet-fd90ca15d6ec
-        x = x + self.self_attn(x)
-        x = x + self.ffwd(x)
+        x = x + self.self_attn(self.ln1(x))
+        x = x + self.ffwd(self.ln2(x))
         return x
 
 
@@ -95,6 +97,7 @@ class BigramLanguageModel(torch.nn.Module):
             Block(embedding_dim, 4, block_size),
             Block(embedding_dim, 4, block_size),
             Block(embedding_dim, 4, block_size),
+            torch.nn.LayerNorm(embedding_dim),
         )
 
         # embedding based on the identity of the tokens
