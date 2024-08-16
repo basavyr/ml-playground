@@ -124,7 +124,9 @@ if DEBUG_MODE == "1":
 
 # split the data 85-15 in training and test, respectively
 N = int(round(0.85*len(input_tensor)))
-batch_size = 16
+EMBEDDING_SIZE = 32  # batch size in Andrew's video
+# this is the actual embedding size within the embedding layer
+batch_size = EMBEDDING_SIZE
 context_length = 8  # also called block size
 
 
@@ -173,7 +175,6 @@ def batch(batch_size: int, context_length: int, data_type: str = "train") -> Tup
 # source: https://github.com/karpathy/ng-video-lecture/blob/52201428ed7b46804849dea0b3ccf0de9df1a5c3/bigram.py#L47
 def estimate_loss(batch_size: int, context_length: int, num_epochs: int):
     out = {}
-
     model.eval()  # do not perform backpropagation
     with torch.no_grad():
         for data_type in ['train', 'test']:
@@ -222,5 +223,8 @@ def train(model: torch.nn.Module, epochs: int, max_num_tokens: int, batch_size: 
         (1, 1), dtype=torch.long, device=DEVICE), max_num_tokens)[0].tolist()))
 
 
-model = llm.BigramLanguageModel(vocab_size).to(DEVICE)
+model = llm.BigramLanguageModel(
+    vocab_size, batch_size, context_length).to(DEVICE)
+
+
 train(model, 3000, 300, batch_size, context_length)
