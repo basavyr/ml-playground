@@ -1,7 +1,11 @@
 import torch
 import os
 
-DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if DEBUG is not set
+DEBUG_MODE = os.getenv('DEBUG', '0')  # Default to '0' if not set
+DEVICE = os.getenv('DEVICE', 'cpu')  # Default to "cpu" if not set
+
+
+DROPOUT = 0.2
 
 
 class Head(torch.nn.Module):
@@ -16,6 +20,7 @@ class Head(torch.nn.Module):
         self.value = torch.nn.Linear(embedding_dim, head_size, bias=False)
         self.register_buffer("tril", torch.tril(
             torch.ones(block_size, block_size)))
+        self.drop = torch.nn.Dropout(DROPOUT)
 
     def forward(self, x):
         B, T, C = x.shape
@@ -25,8 +30,10 @@ class Head(torch.nn.Module):
         v = self.value(x)
 
         w = q @ k.transpose(-2, -1) * C ** -0.5
+
         w = w.masked_fill(self.tril[:T, :T] == 0, float("-inf"))
         w = torch.nn.functional.softmax(w, dim=-1)
+        w = self.drop(w)
 
         return w @ v
 
@@ -34,17 +41,21 @@ class Head(torch.nn.Module):
 class MultiHeadAttention(torch.nn.Module):
     """
     - multi-head implementation of the attention mechanism (scaled dot-product)
+    - `head_size = embedding_dim // num_heads`
     """
 
-    def __init__(self, num_heads: int, head_size: int, embedding_dim: int, block_size: int):
+    def __init__(self, num_heads: int, embedding_dim: int, block_size: int):
         super(MultiHeadAttention, self).__init__()
+        head_size = embedding_dim // num_heads
         self.heads = torch.nn.ModuleList(
             [Head(embedding_dim, head_size, block_size) for _ in range(num_heads)])
         # introduce projection
-        self.proj = torch.nn.Linear(num_heads*head_size, embedding_dim)
+        self.proj = torch.nn.Linear(head_size * num_heads, embedding_dim)
+        self.drop = torch.nn.Dropout(DROPOUT)
 
     def forward(self, x):
-        return self.proj(torch.cat([h(x) for h in self.heads], dim=-1))
+        x = torch.cat([h(x) for h in self.heads], dim=-1)
+        return self.drop(self.proj(x))
 
 
 class FeedForward(torch.nn.Module):
@@ -56,7 +67,7 @@ class FeedForward(torch.nn.Module):
             torch.nn.Linear(embedding_dim, 4 * embedding_dim),
             torch.nn.ReLU(),
             torch.nn.Linear(4 * embedding_dim, embedding_dim),
-            torch.nn.Dropout(0.0),
+            torch.nn.Dropout(DROPOUT),
         )
 
     def forward(self, x):
@@ -64,11 +75,14 @@ class FeedForward(torch.nn.Module):
 
 
 class Block(torch.nn.Module):
-    def __init__(self, embedding_dim: int, num_heads: int, block_size: int):
+    """
+    - a block of multi-head self-attention
+    """
+
+    def __init__(self, num_heads: int, embedding_dim: int,  block_size: int):
         super(Block, self).__init__()
-        head_size = embedding_dim // num_heads
         self.self_attn = MultiHeadAttention(
-            num_heads, head_size, embedding_dim, block_size)
+            num_heads, embedding_dim, block_size)
         self.ffwd = FeedForward(embedding_dim)
         self.ln1 = torch.nn.LayerNorm(embedding_dim)
         self.ln2 = torch.nn.LayerNorm(embedding_dim)
@@ -83,22 +97,22 @@ class Block(torch.nn.Module):
 class BigramLanguageModel(torch.nn.Module):
     def __init__(self, vocab_size: int, embedding_dim: int, block_size: int):
         super(BigramLanguageModel, self).__init__()
+        num_heads = 12
+        n_layers = 6
         self.vocab_size = vocab_size
         self.block_size = block_size
 
         self.self_attn = Head(embedding_dim, embedding_dim, block_size)
 
         self.self_attn_heads = MultiHeadAttention(
-            4, embedding_dim//4, embedding_dim, block_size)
+            num_heads, embedding_dim, block_size)
 
         self.ffwd = FeedForward(embedding_dim)
 
-        self.blocks = torch.nn.Sequential(
-            Block(embedding_dim, 4, block_size),
-            Block(embedding_dim, 4, block_size),
-            Block(embedding_dim, 4, block_size),
-            torch.nn.LayerNorm(embedding_dim),
-        )
+        self.attn_blocks = torch.nn.Sequential(
+            *[Block(num_heads, embedding_dim, block_size) for _ in range(n_layers)])
+
+        self.ln_f = torch.nn.LayerNorm(embedding_dim)
 
         # embedding based on the identity of the tokens
         self.token_embeddings = torch.nn.Embedding(vocab_size, embedding_dim)
@@ -110,7 +124,6 @@ class BigramLanguageModel(torch.nn.Module):
         self.lm_head = torch.nn.Linear(embedding_dim, vocab_size)
 
     def forward(self, tokens: torch.Tensor, targets: torch.Tensor = None):
-
         # the (B,T,C) sizes from Andrew's video
         # T refers to the length of time, i.e., the size of the context
         B, T = tokens.shape
@@ -119,15 +132,16 @@ class BigramLanguageModel(torch.nn.Module):
         token_embeddings = self.token_embeddings(tokens)
 
         # size: (T, C)
-        position_embeddings = self.position_embeddings(torch.arange(T))
+        position_embeddings = self.position_embeddings(
+            torch.arange(T, device=DEVICE))
 
         # size: (B,T,C)
         x = token_embeddings + position_embeddings
 
         # x = self.self_attn_heads(x)
         # x = self.ffwd(x)
-
-        x = self.blocks(x)
+        x = self.attn_blocks(x)
+        x = self.ln_f(x)
 
         # size: (B,T,vocab_size)
         logits = self.lm_head(x)
