@@ -4,6 +4,10 @@ import dotenv
 import os
 dotenv.load_dotenv()
 
+
+models = ["google/gemma-2-9b-it:free", "meta-llama/llama-3.1-8b-instruct:free","mistralai/mistral-7b-instruct:free"]
+or_model = models[0]
+
 def process_model_resp(resp: dict):
 	resp_message = resp['choices'][0]['message']
 	return resp_message['content']
@@ -21,7 +25,7 @@ response = requests.post(
     "Authorization": f"Bearer {API_KEY}",
   },
   data=json.dumps({
-    "model": "meta-llama/llama-3.1-8b-instruct:free", # Optional
+    "model": or_model, # Optional
     "messages": prompt,
     "top_p": 1,
     "temperature": 0.2,
