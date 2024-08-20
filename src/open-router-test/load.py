@@ -6,7 +6,7 @@ dotenv.load_dotenv()
 
 
 models = ["google/gemma-2-9b-it:free", "meta-llama/llama-3.1-8b-instruct:free","mistralai/mistral-7b-instruct:free"]
-or_model = models[0]
+or_model = models[1]
 
 def process_model_resp(resp: dict):
 	resp_message = resp['choices'][0]['message']
