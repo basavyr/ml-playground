@@ -1,0 +1,78 @@
+**Self-Attention in Transformers**
+=====================================
+
+Self-attention is a key component of the Transformer architecture, introduced in the paper "Attention Is All You Need" by Vaswani et al. in 2017. It's a mechanism that allows the model to attend to different parts of the input sequence simultaneously and weigh their importance.
+
+**How Self-Attention Works**
+---------------------------
+
+The self-attention mechanism takes in a sequence of vectors (e.g., word embeddings) and outputs a new sequence of vectors, where each output vector is a weighted sum of the input vectors. The weights are computed based on the similarity between the input vectors.
+
+Here's a step-by-step breakdown of the self-attention process:
+
+1. **Query, Key, and Value Vectors**: The input sequence is first transformed into three different vectors: Query (Q), Key (K), and Value (V). These vectors are typically obtained by multiplying the input sequence with different weight matrices.
+2. **Compute Attention Weights**: The attention weights are computed by taking the dot product of the Query and Key vectors and applying a softmax function. This produces a set of weights that represent the importance of each input vector.
+3. **Compute Output Vector**: The output vector is computed by taking a weighted sum of the Value vectors, where the weights are the attention weights computed in the previous step.
+
+**Mathematical Formulation**
+---------------------------
+
+The self-attention mechanism can be formulated mathematically as follows:
+
+Let `Q`, `K`, and `V` be the Query, Key, and Value vectors, respectively. The attention weights `A` are computed as:
+
+`A = softmax(Q * K^T / sqrt(d))`
+
+where `d` is the dimensionality of the input vectors.
+
+The output vector `O` is computed as:
+
+`O = A * V`
+
+**Multi-Head Attention**
+-------------------------
+
+In practice, the self-attention mechanism is often used in conjunction with multiple attention heads. Each attention head computes a different set of attention weights and outputs, and the final output is a concatenation of the outputs from all attention heads.
+
+**Example Code**
+---------------
+
+Here's an example implementation of self-attention in PyTorch:
+```python
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+class SelfAttention(nn.Module):
+    def __init__(self, embed_dim, num_heads):
+        super(SelfAttention, self).__init__()
+        self.embed_dim = embed_dim
+        self.num_heads = num_heads
+        self.query_linear = nn.Linear(embed_dim, embed_dim)
+        self.key_linear = nn.Linear(embed_dim, embed_dim)
+        self.value_linear = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, x):
+        # Compute Query, Key, and Value vectors
+        query = self.query_linear(x)
+        key = self.key_linear(x)
+        value = self.value_linear(x)
+
+        # Compute attention weights
+        attention_weights = torch.matmul(query, key.T) / math.sqrt(self.embed_dim)
+        attention_weights = F.softmax(attention_weights, dim=-1)
+
+        # Compute output vector
+        output = torch.matmul(attention_weights, value)
+        return output
+
+# Example usage
+embed_dim = 128
+num_heads = 8
+input_seq = torch.randn(1, 10, embed_dim)
+
+self_attention = SelfAttention(embed_dim, num_heads)
+output = self_attention(input_seq)
+print(output.shape)
+```
+Note that this is a simplified example, and in practice, you may want to add additional layers, such as normalization and activation functions, to the self-attention mechanism.

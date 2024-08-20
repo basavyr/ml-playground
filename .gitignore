@@ -30,3 +30,5 @@ tutorials/azure_openai/volumes
 tutorials/azure_openai/dataset.jsonl
 
 src/open-router-test/.env
+
+src/groq-api-test/.env
