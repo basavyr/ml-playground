@@ -1,46 +1,57 @@
-
+import dotenv
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-torch.manual_seed(1)
-
-dim = 2
-
-extra = 10
-dim += extra
-embedding_size = 10
-
-words = ["gicu", "home", "house", "stocks"]
-
-word_to_ix = {}
-
-for id in range(len(words)):
-    word_to_ix.update({f'{words[id-1]}': id})
+dotenv.load_dotenv()
 
 
-test_word = "gicu"
-embeds = nn.Embedding(dim, embedding_size)
+def default_vocab():
+    vocab = list(set(["What", "is", "Cybersecurity", "?"]))
+    vocab = list(map(lambda s: s.lower(), vocab))
 
-if test_word in words:
-    test_embed = embeds(torch.tensor(
-        [word_to_ix[test_word]], dtype=torch.long))
-    print(test_embed)
-else:
-    test_embed = embeds(torch.tensor([word_to_ix["gicu"]], dtype=torch.long))
-    print(test_embed)
+    test_string = ["hey", "what", "is", "gicu"]
 
-exit(1)
+    words_to_idx = {w: idx if w in vocab else "UNK" for idx,
+                    w in enumerate(test_string)}
+    tokens = list(
+        map(lambda str: words_to_idx[str] if str in vocab else len(vocab), test_string))
+
+    print(words_to_idx)
+    print(tokens)
+    vocab_size = len(vocab)
+
+    return vocab, vocab_size, tokens
 
 
 class Model(nn.Module):
-    def __init__(self, embedding_size: int):
+    def __init__(self, vocab_size: int, embedding_size: int):
         super(Model, self).__init__()
-        self.embeddings = nn.Embedding(1, embedding_size)
+        self.embeddings = nn.Embedding(vocab_size, embedding_size)
+
+    def forward(self, x: torch.Tensor):
+        return self.embeddings(x)
 
 
-net = Model(5)
+def tokenizer(words: str):
+    list_of_words = words.split(" ")
+    vocab = {w: idx for idx, w in enumerate(list(set(list_of_words)))}
+    vocab_size = len(vocab)
+    tokens = [vocab[word] for word in list_of_words]
+    return vocab, vocab_size, tokens
 
 
-print(net)
+if __name__ == "__main__":
+    default_vocab()
+    # prompt = os.environ.get("PROMPT", "What is Cybersecurity ?").lower()
+    # embedding_dim = 3
+
+    # vocab, vocab_size, tokens = tokenizer(prompt)
+
+    # net = Model(vocab_size, embedding_dim)
+
+    # output = net(torch.tensor(tokens))
+
+    # print(output)
