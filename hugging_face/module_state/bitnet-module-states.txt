@@ -1,0 +1,72 @@
+--------- 1bitLLM/bitnet_b1_58-large ---------
+LlamaModel(
+  (embed_tokens): Embedding(32002, 1536, padding_idx=32000)
+  (layers): ModuleList(
+    (0-23): 24 x LlamaDecoderLayer(
+      (self_attn): LlamaSdpaAttention(
+        (q_proj): Linear(in_features=1536, out_features=1536, bias=False)
+        (k_proj): Linear(in_features=1536, out_features=1536, bias=False)
+        (v_proj): Linear(in_features=1536, out_features=1536, bias=False)
+        (o_proj): Linear(in_features=1536, out_features=1536, bias=False)
+        (rotary_emb): LlamaRotaryEmbedding()
+      )
+      (mlp): LlamaMLP(
+        (gate_proj): Linear(in_features=1536, out_features=4096, bias=False)
+        (up_proj): Linear(in_features=1536, out_features=4096, bias=False)
+        (down_proj): Linear(in_features=4096, out_features=1536, bias=False)
+        (act_fn): SiLU()
+      )
+      (input_layernorm): LlamaRMSNorm()
+      (post_attention_layernorm): LlamaRMSNorm()
+    )
+  )
+  (norm): LlamaRMSNorm()
+)
+--------- 1bitLLM/bitnet_b1_58-xl ---------
+LlamaModel(
+  (embed_tokens): Embedding(32002, 2048, padding_idx=32000)
+  (layers): ModuleList(
+    (0-23): 24 x LlamaDecoderLayer(
+      (self_attn): LlamaSdpaAttention(
+        (q_proj): Linear(in_features=2048, out_features=2048, bias=False)
+        (k_proj): Linear(in_features=2048, out_features=2048, bias=False)
+        (v_proj): Linear(in_features=2048, out_features=2048, bias=False)
+        (o_proj): Linear(in_features=2048, out_features=2048, bias=False)
+        (rotary_emb): LlamaRotaryEmbedding()
+      )
+      (mlp): LlamaMLP(
+        (gate_proj): Linear(in_features=2048, out_features=5460, bias=False)
+        (up_proj): Linear(in_features=2048, out_features=5460, bias=False)
+        (down_proj): Linear(in_features=5460, out_features=2048, bias=False)
+        (act_fn): SiLU()
+      )
+      (input_layernorm): LlamaRMSNorm()
+      (post_attention_layernorm): LlamaRMSNorm()
+    )
+  )
+  (norm): LlamaRMSNorm()
+)
+--------- 1bitLLM/bitnet_b1_58-3B ---------
+LlamaModel(
+  (embed_tokens): Embedding(32002, 3200, padding_idx=32000)
+  (layers): ModuleList(
+    (0-25): 26 x LlamaDecoderLayer(
+      (self_attn): LlamaSdpaAttention(
+        (q_proj): Linear(in_features=3200, out_features=3200, bias=False)
+        (k_proj): Linear(in_features=3200, out_features=3200, bias=False)
+        (v_proj): Linear(in_features=3200, out_features=3200, bias=False)
+        (o_proj): Linear(in_features=3200, out_features=3200, bias=False)
+        (rotary_emb): LlamaRotaryEmbedding()
+      )
+      (mlp): LlamaMLP(
+        (gate_proj): Linear(in_features=3200, out_features=8640, bias=False)
+        (up_proj): Linear(in_features=3200, out_features=8640, bias=False)
+        (down_proj): Linear(in_features=8640, out_features=3200, bias=False)
+        (act_fn): SiLU()
+      )
+      (input_layernorm): LlamaRMSNorm()
+      (post_attention_layernorm): LlamaRMSNorm()
+    )
+  )
+  (norm): LlamaRMSNorm()
+)
