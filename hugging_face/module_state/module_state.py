@@ -1,3 +1,5 @@
+# source:
+# https://stackoverflow.com/questions/76768226/target-modules-for-applying-peft-lora-on-different-models/76779946#76779946 
 from transformers import AutoConfig, AutoModel
 
 
