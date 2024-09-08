@@ -87,20 +87,31 @@ def model_eval(prompt: str, model_name: str):
           [0]["generated_text"])
 
 
+def batch_eval(trained_model_name: str, prompt_list: list[str]):
+    for prompt in prompt_list:
+        print("\n-----------------------")
+        model_eval(prompt, trained_model_name)
+        print("-----------------------\n")
+
+
 if __name__ == "__main__":
     model_name = "openai-community/gpt2"
     dataset_path = "dataset.jsonl"
 
     sft_config = SFTConfig(
-        max_seq_length=512,  # Adjust based on average response length
+        max_seq_length=1024,  # Adjust based on average response length
         output_dir="./gpt2-trained",
         packing=False,
         num_train_epochs=30,
     )
-
     model_train(model_name, dataset_path, sft_config)
 
-    prompt = "How are K isomers formed?"
     trained_model_name = "gpt2-trained"
-
-    model_eval(prompt, trained_model_name)
+    prompts = [
+        "How does the cranking model account for pairing correlations in rotating nuclei?",
+        "What role do deformation-driving orbitals play in determining nuclear shape?",
+        "How does the wobbling frequency vary with increasing angular momentum in a triaxial nucleus?",
+        "What is the effect of gamma softness on the rotational spectra of nuclei?",
+        "How do pairing vibrations influence the moment of inertia in deformed nuclei?"
+    ]
+    batch_eval(trained_model_name, prompts)
