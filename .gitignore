@@ -32,3 +32,12 @@ tutorials/azure_openai/dataset.jsonl
 src/open-router-test/.env
 
 src/groq-api-test/.env
+
+hugging_face/sft_trainer/gpt2-trained/
+
+
+hugging_face/sft_trainer/tmp_trainer
+
+hugging_face/sft_trainer/wandb
+
+hugging_face/sft_trainer/logs
