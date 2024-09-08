@@ -2,6 +2,10 @@ import json
 
 from datasets import load_dataset
 from trl import SFTConfig, SFTTrainer
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer, TrainingArguments
+from datasets import load_dataset
+
+from transformers import pipeline
 
 
 def prompt_format(raw_examples: list[dict]):
@@ -24,6 +28,21 @@ def prompt_format(raw_examples: list[dict]):
     return output_prompts
 
 
+def formatting_prompts_func(example):
+    output_texts = []
+    for i in range(50):
+        text = f"""###Below is a question or a task. Write a response that appropriately completes the request.
+
+        ### Prompt:
+        {example['prompt'][i]}
+        
+        ### Instruction response:
+        {example['response'][i]}
+        """
+        output_texts.append(text)
+    return output_texts
+
+
 def read_jsonl(file: str):
     with open(f'{file}', 'r') as reader:
         data = reader.readlines()
@@ -35,6 +54,53 @@ def read_jsonl(file: str):
     return json_lines
 
 
+def model_train(model_name: str, dataset_path: str, sft_config: SFTConfig):
+    dataset = load_dataset("json", data_files=dataset_path, split="train")
+
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    # source: https://stackoverflow.com/questions/70544129/transformers-asking-to-pad-but-the-tokenizer-does-not-have-a-padding-token
+    if tokenizer.pad_token is None:
+        tokenizer.add_special_tokens({'pad_token': '[PAD]'})
+        # we need to resize the token embeddings
+        model.resize_token_embeddings(
+            len(tokenizer))  # Resize token embeddings
+
+    # Initialize trainer with the custom configuration
+    trainer = SFTTrainer(
+        model=model,
+        args=sft_config,
+        tokenizer=tokenizer,
+        train_dataset=dataset,
+        formatting_func=formatting_prompts_func,  # Use your custom formatting function
+    )
+
+    trainer.train()
+    trainer.save_model(f'{model_name.split("/")[-1]}-trained')
+
+
+def model_eval(prompt: str, model_name: str):
+    pipe = pipeline("text-generation", model=model_name)
+    print(pipe(prompt)
+          [0]["generated_text"])
+
+
 if __name__ == "__main__":
-    data_jsonl = read_jsonl("dataset.jsonl")
-    prompts = prompt_format(data_jsonl)
+    model_name = "openai-community/gpt2"
+    dataset_path = "dataset.jsonl"
+
+    sft_config = SFTConfig(
+        max_seq_length=512,  # Adjust based on average response length
+        output_dir="./gpt2-trained",
+        packing=False,
+        num_train_epochs=30,
+    )
+
+    model_train(model_name, dataset_path, sft_config)
+
+    prompt = "How are K isomers formed?"
+    trained_model_name = "gpt2-trained"
+
+    model_eval(prompt, trained_model_name)
