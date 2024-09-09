@@ -1,10 +1,10 @@
 import torch
 
+from torch.utils.data import Dataset, DataLoader, TensorDataset
 
-from torch.nn import functional as F
+import model as m
 
-
-relu = F.relu
+import torch.nn as nn
 
 torch.manual_seed(42)
 
@@ -24,14 +24,14 @@ def sum_tensor_by_columns(t: torch.Tensor):
     return (a + b).view(t.shape[0], -1, 1)
 
 
-def generate_tensor(n: int, batch_size: int, highs: int, lows: int = 0):
-    dim_t = (batch_size, n, 2)
-    t = torch.randint(lows, highs, dim_t)
+def generate_tensor(n_samples: int, highs: int, lows: int = 0):
+    dim_t = (n_samples, 1, 2)
+    t = torch.randint(lows, highs, dim_t, dtype=torch.float)
     return t
 
 
-def generate_input_data(n_samples: int, batch_size: int):
-    t = generate_tensor(n_samples, batch_size, 10)
+def generate_input_data(n_samples: int):
+    t = generate_tensor(n_samples, 10)
     st = sum_tensor_by_columns(t)
     return torch.cat((t, st), dim=-1)
 
@@ -44,11 +44,11 @@ def generate_features_and_labels(t: torch.tensor):
 
 
 if __name__ == "__main__":
-    N = 10000
     batch_size = 128
-    data = generate_input_data(N, batch_size)
+    n_samples = 10000
+    data = generate_input_data(n_samples)
 
     features, labels = generate_features_and_labels(data)
 
-    print(features[0])
-    print(labels[0])
+    dataset = TensorDataset(features, labels)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
