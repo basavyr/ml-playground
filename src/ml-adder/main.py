@@ -1,12 +1,12 @@
 import torch
 
+import torch.utils
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 
 import model as m
 
 import torch.nn as nn
-
-torch.manual_seed(42)
+import torch.optim as optim
 
 
 def valid_tensor_shape(t: torch.Tensor):
@@ -38,17 +38,34 @@ def generate_input_data(n_samples: int):
 
 def generate_features_and_labels(t: torch.tensor):
     valid_tensor_shape(t)
-    features = data[:, :, :2]
-    labels = data[:, :, 2].view(data.shape[0], -1, 1)
+    features = t[:, :, :2]
+    labels = t[:, :, 2].view(t.shape[0], -1, 1)
     return features, labels
 
 
 if __name__ == "__main__":
-    batch_size = 128
-    n_samples = 10000
-    data = generate_input_data(n_samples)
+    batch_size = 32
+    n_samples = 100000
 
-    features, labels = generate_features_and_labels(data)
+    train_data = generate_input_data(n_samples)
+    train_features, train_labels = generate_features_and_labels(train_data)
 
-    dataset = TensorDataset(features, labels)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    test_data = generate_input_data(1000)
+    test_features, test_labels = generate_features_and_labels(test_data)
+
+    train_set = TensorDataset(train_features, train_labels)
+    test_set = TensorDataset(test_features, test_labels)
+
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False)
+    test_loader = DataLoader(test_set, batch_size=1, shuffle=False)
+
+    test_dataset = TensorDataset(torch.tensor(
+        [[60, 9]], dtype=torch.float), torch.tensor([[5]], dtype=torch.float))
+    test_loader = DataLoader(test_set)
+
+    loss_fn = nn.MSELoss()
+    model = m.Adnet()
+
+    train(model, loss_fn, train_loader)
+
+    eval("model.pth", loss_fn, test_loader)
