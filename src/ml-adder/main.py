@@ -43,6 +43,56 @@ def generate_features_and_labels(t: torch.tensor):
     return features, labels
 
 
+def train(model: nn.Module, loss_fn, dataloader: DataLoader):
+    optimizer = optim.SGD(model.parameters())
+
+    model.train()
+    train_loss = []
+    for idx, batch in enumerate(dataloader):
+        x, y_true = batch
+        y = model(x)
+
+        loss = loss_fn(y, y_true)
+
+        optimizer.zero_grad()
+        loss.backward()
+
+        optimizer.step()
+
+        train_loss.append(loss.item())
+
+    torch.save(model, "model.pth")
+
+
+def eval(model_path: str, loss_fn, eval_dataloader: DataLoader):
+    model = torch.load(model_path)
+
+    model.eval()
+
+    eval_losses = []
+
+    total_predictions = []
+    correct_predictions = []
+    with torch.no_grad():
+        for idx, batch in enumerate(eval_dataloader):
+            x, y_true = batch
+
+            y = model(x)
+
+            loss = loss_fn(y, y_true)
+            eval_losses.append(loss.item())
+
+            prediction = torch.allclose(y, y_true, atol=0.1)
+            total_predictions.append(prediction)
+            if prediction is True:
+                correct_predictions.append(prediction)
+
+    print(
+        f'Correct predictions: {len(correct_predictions)}/{len(total_predictions)}')
+    print(
+        f'Model accuracy: {len(correct_predictions)/len(total_predictions)*100:.3f} %')
+
+
 if __name__ == "__main__":
     batch_size = 32
     n_samples = 100000
