@@ -9,6 +9,7 @@
         "dotenv",
         "ffwd",
         "Goodfellow",
+        "huggingface",
         "localdata",
         "logsoftmax",
         "Morphence",
