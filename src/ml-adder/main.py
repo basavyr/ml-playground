@@ -109,13 +109,26 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False)
     test_loader = DataLoader(test_set, batch_size=1, shuffle=False)
 
-    test_dataset = TensorDataset(torch.tensor(
-        [[60, 9]], dtype=torch.float), torch.tensor([[5]], dtype=torch.float))
     test_loader = DataLoader(test_set)
 
+    config = m.AdnetConfig(
+        input_size=2,
+        hidden_size1=512,
+        hidden_size2=1024,
+        output_size=1,
+        license="mit",
+        repo_url="https://huggingface.co/basavyr/adnet"
+    )
+    model = m.Adnet_HF(config)
+
     loss_fn = nn.MSELoss()
-    model = m.Adnet()
 
     train(model, loss_fn, train_loader)
 
     eval("model.pth", loss_fn, test_loader)
+
+    # save locally
+    model.save_pretrained("adnet")
+
+    # push to the hub
+    model.push_to_hub("basavyr/adnet")
