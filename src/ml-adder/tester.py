@@ -14,8 +14,7 @@ safetensor_file_path = hf_hub_download(repo_id=repo_id, filename=filename)
 # Load the safetensors weights into the model
 state_dict = load_file(safetensor_file_path)
 
-
-model = m.Adnet_HF(m.AdnetConfig())
+model = m.Adnet(m.AdnetConfig())
 
 model.load_state_dict(state_dict)
 
