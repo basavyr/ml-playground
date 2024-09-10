@@ -21,6 +21,8 @@
         "randn",
         "relu",
         "softmax",
+        "tqdm",
+        "trange",
         "tril",
         "unsqueeze",
         "xbow",
