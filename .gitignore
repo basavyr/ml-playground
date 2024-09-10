@@ -34,3 +34,6 @@ src/open-router-test/.env
 src/groq-api-test/.env
 
 src/ml-adder/__pycache__/
+
+src/ml-adder/.env
+src/ml-adder/adnet
