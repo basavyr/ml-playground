@@ -38,3 +38,4 @@ hugging_face/adnet/__pycache__/
 src/ml-adder/__pycache__/
 
 src/ml-adder/.env
+src/ml-adder/adnet
