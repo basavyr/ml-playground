@@ -12,11 +12,14 @@ from tqdm import trange
 
 import data
 
+from typing import Callable
 
-def train(model: nn.Module, loss_fn, dataloader: DataLoader):
-    optimizer = optim.SGD(model.parameters())
+
+def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], dataloader: DataLoader):
+    optimizer = optim.Adam(model.parameters())
 
     model.train()
+
     train_loss = []
     for idx, batch in enumerate(dataloader):
         x, y_true = batch
@@ -31,10 +34,12 @@ def train(model: nn.Module, loss_fn, dataloader: DataLoader):
 
         train_loss.append(loss.item())
 
-    torch.save(model, "model.pth")
+    torch.save(model, f"{model.model_name}.pth")
+    torch.save(optimizer.state_dict(),
+               f"{model.model_name}-optimizer_state.pth")
 
 
-def eval(model_path: str, loss_fn, eval_dataloader: DataLoader):
+def eval(model_path: str, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], eval_dataloader: DataLoader):
     model = torch.load(model_path)
 
     model.eval()
@@ -65,10 +70,10 @@ def eval(model_path: str, loss_fn, eval_dataloader: DataLoader):
 
 if __name__ == "__main__":
     batch_size = 64
-    n_samples = 150000
+    n_samples = 500000
 
     train_loader = data.generate_train_data(n_samples, batch_size)
-    test_loader = data.generate_test_data(5000)
+    test_loader = data.generate_test_data(2500)
 
     config = m.AdnetConfig(
         input_size=2,
@@ -78,16 +83,17 @@ if __name__ == "__main__":
         license="mit",
         repo_url="https://huggingface.co/basavyr/adnet"
     )
+
     model = m.Adnet_HF(config)
 
     loss_fn = nn.MSELoss()
 
     train(model, loss_fn, train_loader)
 
-    eval("model.pth", loss_fn, test_loader)
+    eval(f"{model.model_name}.pth", loss_fn, test_loader)
 
-    # save locally
-    model.save_pretrained("adnet")
+    # # save locally
+    # model.save_pretrained("adnet")
 
-    # push to the hub
-    model.push_to_hub("basavyr/adnet")
+    # # push to the hub
+    # model.push_to_hub("basavyr/adnet")
