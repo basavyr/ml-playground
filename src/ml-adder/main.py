@@ -1,21 +1,18 @@
 import torch
-
 import torch.utils
-from torch.utils.data import Dataset, DataLoader, TensorDataset
-
-import model as m
-
+from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
 
 from tqdm import trange
+from typing import Callable
+import time
 
+import model as m
 import data
 
-from typing import Callable
 
-
-def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], dataloader: DataLoader):
+def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], dataloader: DataLoader, num_epochs: int = 1):
     """
     Trains a given model using the provided loss function and dataloader.
 
@@ -36,19 +33,28 @@ def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torc
 
     model.train()
 
-    train_loss = []
-    for idx, batch in enumerate(dataloader):
-        x, y_true = batch
-        y = model(x)
+    start = time.time()
+    epoch_losses = []
+    for _ in (t := trange(num_epochs)):
+        running_loss = 0
+        for _, batch in enumerate(dataloader):
+            x, y_true = batch
+            y = model(x)
 
-        loss = loss_fn(y, y_true)
+            loss = loss_fn(y, y_true)
+            running_loss += loss.item()
 
-        optimizer.zero_grad()
-        loss.backward()
+            optimizer.zero_grad()
+            loss.backward()
 
-        optimizer.step()
+            optimizer.step()
 
-        train_loss.append(loss.item())
+        epoch_loss = running_loss/len(dataloader)
+        epoch_losses.append(epoch_loss)
+        t.set_description(f"Loss: {epoch_loss}")
+
+    train_time = time.time()-start
+    print(f'Training model finished: {train_time:.3f} s')
 
     torch.save(model, f"{model.model_name}.pth")
     torch.save(optimizer.state_dict(),
@@ -87,6 +93,7 @@ def eval(model_path: str, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.
 if __name__ == "__main__":
     batch_size = 64
     n_samples = 500000
+    num_epochs = 5
 
     train_loader = data.generate_train_data(n_samples, batch_size)
     test_loader = data.generate_test_data(2500)
@@ -96,20 +103,18 @@ if __name__ == "__main__":
         hidden_size1=512,
         hidden_size2=1024,
         output_size=1,
-        license="mit",
-        repo_url="https://huggingface.co/basavyr/adnet"
     )
 
-    model = m.Adnet_HF(config)
+    model = m.Adnet(config)
 
     loss_fn = nn.MSELoss()
 
-    train(model, loss_fn, train_loader)
+    train(model, loss_fn, train_loader, num_epochs)
 
     eval(f"{model.model_name}.pth", loss_fn, test_loader)
 
-    # # save locally
-    # model.save_pretrained("adnet")
+    # save locally
+    model.save_pretrained(model.model_name)
 
-    # # push to the hub
-    # model.push_to_hub("basavyr/adnet")
+    # push to the hub
+    model.push_to_hub(model.repo_id)
