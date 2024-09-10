@@ -16,7 +16,23 @@ from typing import Callable
 
 
 def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], dataloader: DataLoader):
-    optimizer = optim.Adam(model.parameters())
+    """
+    Trains a given model using the provided loss function and dataloader.
+
+    Args:
+        model (nn.Module): The neural network model to train.
+        loss_fn (Callable[[torch.Tensor, torch.Tensor], torch.Tensor]):
+            The loss function used for training, e.g., nn.CrossEntropyLoss().
+        dataloader (DataLoader): The dataloader providing training batches.
+
+    Saves:
+        - The trained model as "{model.model_name}.pth".
+        - The optimizer state as "{model.model_name}-optimizer_state.pth".
+
+    Note:
+        Ensure that the model has an attribute `model_name` defined for proper saving.
+    """
+    optimizer = optim.SGD(model.parameters(), lr=0.0001, momentum=0.9)
 
     model.train()
 
@@ -36,7 +52,7 @@ def train(model: nn.Module, loss_fn: Callable[[torch.Tensor, torch.Tensor], torc
 
     torch.save(model, f"{model.model_name}.pth")
     torch.save(optimizer.state_dict(),
-               f"{model.model_name}-optimizer_state.pth")
+               f"{model.model_name}-optimizer.pth")
 
 
 def eval(model_path: str, loss_fn: Callable[[torch.Tensor, torch.Tensor], torch.Tensor], eval_dataloader: DataLoader):
