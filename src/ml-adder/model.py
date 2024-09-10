@@ -39,6 +39,7 @@ class AdnetConfig(PretrainedConfig):
         self.pipeline_tag = pipeline_tag
         self.license = license
         self.repo_url = repo_url
+        self.model_name = "adnet"
 
 
 class Adnet_HF(PreTrainedModel):
@@ -48,6 +49,8 @@ class Adnet_HF(PreTrainedModel):
         self.fc2 = nn.Linear(config.hidden_size1, config.hidden_size2)
         self.fc3 = nn.Linear(config.hidden_size2, config.output_size)
         self.relu = F.relu
+        self.model_name = config.model_name
+        self.model_type = config.model_type
 
     def forward(self, x: torch.Tensor):
         x = self.fc1(x)
