@@ -32,3 +32,9 @@ tutorials/azure_openai/dataset.jsonl
 src/open-router-test/.env
 
 src/groq-api-test/.env
+
+hugging_face/adnet/__pycache__/
+
+src/ml-adder/__pycache__/
+
+src/ml-adder/.env
