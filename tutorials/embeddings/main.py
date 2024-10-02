@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import json
 
 import utils
 
@@ -99,7 +100,6 @@ if __name__ == "__main__":
 
     input_strings = [
         "Hey there, how are you?",
-        "Hey there, how are you?",
         "I like coffee and good morning!",
         "What is your name, please?",
         "Thanks for coming to the office.",
@@ -111,18 +111,33 @@ if __name__ == "__main__":
         "Is the office open today or closed?"
     ]
 
+    # compute the word embeddings for every input string
     word_embeddings = []
     for input in input_strings:
         we = create_word_embedding(T, WE, input)
         word_embeddings.append(we)
 
-    for i in range(len(word_embeddings)-1):
-        we1, we2 = word_embeddings[i], word_embeddings[i+1]
-        if we1.shape[0] != we2.shape[0]:
-            print(
-                "Can't compute cosine similarity due to the word embeddings shape inconsistency")
-            # TODO: add support for padding in the word embeddings such that cosine similarity can be evaluated for input strings that do not have the same token length
-            # source: https://stackoverflow.com/questions/66374955/computing-cosine-distance-with-differently-shaped-tensors
-        else:
-            coss = F.cosine_similarity(we1, we2)
-            print(coss)
+    # compute the cosine similarities of every input string (its word embedding) in relationship with the other input strings (its word embedding)
+    cosine_similarities = {}
+    for idx, we1 in enumerate(word_embeddings):
+        we1_similarities = {}
+        for idx2, we2 in enumerate(word_embeddings):
+            if we1.shape[0] != we2.shape[0]:
+                # TODO: add support for padding in the word embeddings such that cosine similarity can be evaluated for input strings that do not have the same token length
+                # source: https://stackoverflow.com/questions/66374955/computing-cosine-distance-with-differently-shaped-tensors
+                cosine_similarities
+                we1_similarities.update({f'w{idx2+1}': -1})
+            else:
+                coss = F.cosine_similarity(we1, we2)
+                we1_similarities.update({f'w{idx2+1}': coss.tolist()})
+        cosine_similarities.update({f'w{idx+1}': we1_similarities})
+
+    embedding_file = "embeddings.json"
+    with open(embedding_file, "w+") as dumper:
+        data = {}
+        for idx, (input_string, we) in enumerate(zip(input_strings, word_embeddings)):
+            _d = {"input": input_string,
+                  "embedding": str(we.tolist()),
+                  f"coss-w{idx+1}": cosine_similarities[f'w{idx+1}']}
+            data.update({f"d{idx+1}": _d})
+        json.dump(data, dumper)
