@@ -9,10 +9,18 @@ EMBEDDING_DIM = 10
 
 
 class Embedding(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int):
+    def __init__(self, num_embeddings: int, embedding_dim: int, pre_trained_weights=None):
         super(Embedding, self).__init__()
         self.embedding_dim = embedding_dim
+        self.num_embeddings = num_embeddings
         self.embedding = nn.Embedding(num_embeddings, embedding_dim)
+
+        if pre_trained_weights is not None:
+            # Set the weights of the embedding layer to the pre-trained weights
+            self.embedding.weight = nn.Parameter(pre_trained_weights)
+            self.embedding.weight.requires_grad_(False)
+        else:
+            nn.init.xavier_uniform_(self.embedding.weight)
 
     def forward(self, x: torch.Tensor):
         x = self.embedding(x)
@@ -60,6 +68,8 @@ if __name__ == "__main__":
 
     T = Tokenizer(utils.dictionary)
     num_embeddings = len(T.word_indices)
+    pre_trained_weights = torch.randint(
+        0, 10, (num_embeddings, EMBEDDING_DIM), dtype=torch.float)
     WE = Embedding(num_embeddings, EMBEDDING_DIM)
 
     input_strings = [
