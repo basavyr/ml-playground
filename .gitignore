@@ -42,3 +42,5 @@ hugging_face/adnet/__pycache__/__init__.cpython-311.pyc
 hugging_face/adnet/__pycache__/configuration_adnet.cpython-311.pyc
 
 hugging_face/adnet/__pycache__/modeling_adnet.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/
