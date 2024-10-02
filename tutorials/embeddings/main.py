@@ -8,6 +8,18 @@ import utils
 EMBEDDING_DIM = 10
 
 
+class Embedding(nn.Module):
+    def __init__(self, dictionary: list[str], embedding_dim: int):
+        super(Embedding, self).__init__()
+        self.dictionary = dictionary
+        self.embedding_dim = embedding_dim
+        self.embedding = nn.Embedding(len(dictionary), embedding_dim)
+
+    def forward(self, x: torch.Tensor):
+        x = self.embedding(x)
+        return x
+
+
 class Tokenizer():
     tokenized_symbols = r' `~!@#$%^&*()-_=+[{]}\|;:\'",<.>/?'
 
@@ -42,9 +54,11 @@ class Tokenizer():
 if __name__ == "__main__":
 
     T = Tokenizer(utils.dictionary)
+    WE = Embedding(utils.dictionary, EMBEDDING_DIM)
 
     input = "Hey there, how are you?"
-
     input_token_ids = T.to_tensor(input)
 
+    print(input)
     print(input_token_ids)
+    print(WE(input_token_ids))
