@@ -9,7 +9,7 @@ EMBEDDING_DIM = 10
 
 
 class Embedding(nn.Module):
-    def __init__(self, num_embeddings: int, embedding_dim: int, pre_trained_weights=None):
+    def __init__(self, num_embeddings: int, embedding_dim: int, weight_init: str, pre_trained_weights=None):
         super(Embedding, self).__init__()
         self.embedding_dim = embedding_dim
         self.num_embeddings = num_embeddings
@@ -20,7 +20,29 @@ class Embedding(nn.Module):
             self.embedding.weight = nn.Parameter(pre_trained_weights)
             self.embedding.weight.requires_grad_(False)
         else:
-            nn.init.xavier_uniform_(self.embedding.weight)
+            # Initialize the embedding weights based on the weight_init argument
+            if weight_init == "xavier":
+                nn.init.xavier_uniform_(self.embedding.weight)
+            elif weight_init == "kaiming":
+                nn.init.kaiming_uniform_(
+                    self.embedding.weight, nonlinearity='relu')
+            elif weight_init == "normal":
+                nn.init.normal_(self.embedding.weight, mean=0.0, std=0.1)
+            elif weight_init == "uniform":
+                nn.init.uniform_(self.embedding.weight, a=-0.05,
+                                 b=0.05)  # Uniform distribution
+            elif weight_init == "constant":
+                # All weights set to a constant value
+                nn.init.constant_(self.embedding.weight, 0.5)
+            elif weight_init == "orthogonal":
+                # Orthogonal initialization
+                nn.init.orthogonal_(self.embedding.weight)
+            elif weight_init == "sparse":
+                # Sparse initialization
+                nn.init.sparse_(self.embedding.weight, sparsity=0.1, std=0.01)
+            else:
+                # Default: Apply Xavier uniform initialization if no specific method is provided
+                nn.init.xavier_uniform_(self.embedding.weight)
 
     def forward(self, x: torch.Tensor):
         x = self.embedding(x)
@@ -65,12 +87,15 @@ def create_word_embedding(tokenizer: Tokenizer, embedding: Embedding, input_stri
 
 
 if __name__ == "__main__":
-
     T = Tokenizer(utils.dictionary)
     num_embeddings = len(T.word_indices)
+
     pre_trained_weights = torch.randint(
         0, 10, (num_embeddings, EMBEDDING_DIM), dtype=torch.float)
-    WE = Embedding(num_embeddings, EMBEDDING_DIM)
+    weight_inits = ["xavier", "uniform", "kaiming",
+                    "orthogonal", "normal", "constant", "sparse"]
+
+    WE = Embedding(num_embeddings, EMBEDDING_DIM, "kaiming")
 
     input_strings = [
         "Hey there, how are you?",
@@ -93,12 +118,10 @@ if __name__ == "__main__":
 
     for i in range(len(word_embeddings)-1):
         we1, we2 = word_embeddings[i], word_embeddings[i+1]
-
         if we1.shape[0] != we2.shape[0]:
             print(
                 "Can't compute cosine similarity due to the word embeddings shape inconsistency")
-            # TODO: add support for padding in the word embeddings
-            # print("Padding is not supported yet!")
+            # TODO: add support for padding in the word embeddings such that cosine similarity can be evaluated for input strings that do not have the same token length
             # source: https://stackoverflow.com/questions/66374955/computing-cosine-distance-with-differently-shaped-tensors
         else:
             coss = F.cosine_similarity(we1, we2)
