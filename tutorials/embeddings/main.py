@@ -99,6 +99,7 @@ if __name__ == "__main__":
                 "Can't compute cosine similarity due to the word embeddings shape inconsistency")
             # TODO: add support for padding in the word embeddings
             # print("Padding is not supported yet!")
+            # source: https://stackoverflow.com/questions/66374955/computing-cosine-distance-with-differently-shaped-tensors
         else:
             coss = F.cosine_similarity(we1, we2)
             print(coss)
