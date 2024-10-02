@@ -86,6 +86,19 @@ if __name__ == "__main__":
         "Is the office open today or closed?"
     ]
 
+    word_embeddings = []
     for input in input_strings:
         we = create_word_embedding(T, WE, input)
-        print(we)
+        word_embeddings.append(we)
+
+    for i in range(len(word_embeddings)-1):
+        we1, we2 = word_embeddings[i], word_embeddings[i+1]
+
+        if we1.shape[0] != we2.shape[0]:
+            print(
+                "Can't compute cosine similarity due to the word embeddings shape inconsistency")
+            # TODO: add support for padding in the word embeddings
+            # print("Padding is not supported yet!")
+        else:
+            coss = F.cosine_similarity(we1, we2)
+            print(coss)
