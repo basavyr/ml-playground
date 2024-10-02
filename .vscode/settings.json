@@ -8,6 +8,7 @@
         "dotenv",
         "ffwd",
         "Goodfellow",
+        "kaiming",
         "localdata",
         "logsoftmax",
         "Morphence",
