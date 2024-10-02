@@ -25,13 +25,18 @@ class Tokenizer():
         word_indices.update({"<UNK>": len(word_indices)})
         return word_indices
 
-    def tokenize(self, input_string: str):
+    def tokenize(self, input_string: str) -> list[int]:
         deconstructed = self.deconstruct_input(input_string)
 
         token_ids = [self.word_indices.get(
             word, self.word_indices['<UNK>']) for word in deconstructed]
 
         return token_ids
+
+    def to_tensor(self, input_string: str) -> torch.Tensor:
+        token_ids = self.tokenize(input_string)
+
+        return torch.tensor(token_ids, dtype=torch.int)
 
 
 if __name__ == "__main__":
@@ -40,6 +45,6 @@ if __name__ == "__main__":
 
     input = "Hey there, how are you?"
 
-    x = T.tokenize(input)
-    print(input)
-    print(x)
+    input_token_ids = T.to_tensor(input)
+
+    print(input_token_ids)
