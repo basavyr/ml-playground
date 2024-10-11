@@ -33,6 +33,7 @@ src/open-router-test/.env
 
 src/groq-api-test/.env
 
+
 hugging_face/sft_trainer/gpt2-trained/
 
 
@@ -41,3 +42,24 @@ hugging_face/sft_trainer/tmp_trainer
 hugging_face/sft_trainer/wandb
 
 hugging_face/sft_trainer/logs
+
+src/ml-adder/__pycache__/
+
+src/ml-adder/.env
+src/ml-adder/adnet
+hugging_face/adnet/__pycache__/__init__.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/configuration_adnet.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/modeling_adnet.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/
+
+hugging_face/adnet/__pycache__/
+
+src/ml-adder/__pycache__/
+
+src/ml-adder/.env
+
+src/ml-adder/adnet
+tutorials/embeddings/__pycache__/
