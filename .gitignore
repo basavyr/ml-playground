@@ -34,6 +34,15 @@ src/open-router-test/.env
 src/groq-api-test/.env
 
 
+hugging_face/sft_trainer/gpt2-trained/
+
+
+hugging_face/sft_trainer/tmp_trainer
+
+hugging_face/sft_trainer/wandb
+
+hugging_face/sft_trainer/logs
+
 src/ml-adder/__pycache__/
 
 src/ml-adder/.env
@@ -54,4 +63,3 @@ src/ml-adder/.env
 
 src/ml-adder/adnet
 tutorials/embeddings/__pycache__/
-
