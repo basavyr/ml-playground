@@ -33,10 +33,25 @@ src/open-router-test/.env
 
 src/groq-api-test/.env
 
-hugging_face/adnet/__pycache__/
 
 src/ml-adder/__pycache__/
 
 src/ml-adder/.env
 src/ml-adder/adnet
+hugging_face/adnet/__pycache__/__init__.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/configuration_adnet.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/modeling_adnet.cpython-311.pyc
+
+hugging_face/adnet/__pycache__/
+
+hugging_face/adnet/__pycache__/
+
+src/ml-adder/__pycache__/
+
+src/ml-adder/.env
+
+src/ml-adder/adnet
 tutorials/embeddings/__pycache__/
+
