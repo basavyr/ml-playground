@@ -18,7 +18,7 @@ DEFAULT_DEVICE: torch.device = torch.device("mps") if os.uname(
 ).sysname == "Darwin" else torch.device("cpu")
 
 
-def train(training_configs: Conv_Configs):
+def train(training_configs: Conv_Configs, save_state_dict: bool = False):
     device = training_configs.device
     loss_fn = training_configs.loss_fn
     optimizer = training_configs.optimizer
@@ -75,15 +75,13 @@ def train(training_configs: Conv_Configs):
             f'Epoch: {epoch+1} -> Loss: {epoch_loss:.3f} | Acc: {accuracy:.3f} %')
 
     train_time = time.time()-train_start
-    # print(f'Train time: {train_time:.3f} s')
-    # print(f'Accuracy: {best_accuracy}')
-    # print(f'Loss: {best_loss}')
 
     report["loss"] = best_loss[1]
     report["acc"] = best_accuracy[1]
-    report["loss_fn"] = f'{type(loss_fn).__name__}'
-    report["optimizer"] = f'{type(optimizer).__name__}'
     report["train_time"] = train_time
+
+    if save_state_dict:
+        torch.save(model, f'{model.model_name}-trained.pth')
 
     return report
 
@@ -94,12 +92,11 @@ def eval(configs: Conv_Configs):
     data = configs.eval_loader
     loss_fn = configs.loss_fn
 
-    report = {}
-    start = time.time()
     model.to(device)
     model.eval()
     running_loss = 0
-    predictions = 0
+    acc = 0
+    start = time.time()
     with torch.no_grad():
         for x, y_true in data:
             x, y_true = x.to(device), y_true.to(device)
@@ -108,11 +105,11 @@ def eval(configs: Conv_Configs):
             loss = loss_fn(y, y_true)
             running_loss += loss.item()
 
-            predictions += (torch.argmax(y, dim=1) == y_true).sum().item()
+            acc += (torch.argmax(y, dim=1) == y_true).sum().item()
 
     return {
         "loss": running_loss/len(data),
-        "acc": float(predictions/len(data.dataset)*100),
+        "acc": float(acc/len(data.dataset)*100),
         "eval_time": time.time()-start,
     }
 
@@ -122,9 +119,14 @@ if __name__ == "__main__":
     model_configs = Conv_Configs(MNIST().mnist, DEFAULT_DEVICE, epochs=10)
 
     report = {}
-    report["training"] = train(model_configs)
-    report["eval"] = eval(model_configs)
     report["hash"] = model_configs.hash
+    report["loss_fn"] = f'{type(model_configs.loss_fn).__name__}'
+    report["optimizer"] = f'{type(model_configs.optimizer).__name__}'
+
+    # --------- perform training ---------
+    report["training"] = train(model_configs, save_state_dict=True)
+    # --------- measure model performance ---------
+    report["eval"] = eval(model_configs)
 
     with open("training_report.json", 'w') as dumper:
         json.dump(report, dumper)
