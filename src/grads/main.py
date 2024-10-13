@@ -1,4 +1,5 @@
 
+from typing import Mapping, Dict, Any
 import torch
 import torch.utils.data
 import torch.nn as nn
@@ -25,7 +26,7 @@ def train(training_configs: Conv_Configs):
     epochs = training_configs.epochs
     model = training_configs.model
 
-    training_report = {"training": []}
+    report = {}
     losses = []
     best_loss = (0, torch.inf)
     accuracies = []
@@ -34,7 +35,10 @@ def train(training_configs: Conv_Configs):
     train_start = time.time()
     model.to(device)
     model.train()
-    for epoch in range(epochs):
+
+    from tqdm import trange
+
+    for epoch in (t := trange(0, epochs)):
         start = time.time()
         epoch_loss = 0
         predictions = 0
@@ -60,26 +64,28 @@ def train(training_configs: Conv_Configs):
         if accuracy > best_accuracy[1]:
             best_accuracy = (epoch, accuracy)
 
-        training_report["training"].append({
+        report[f'epoch-{epoch+1}'] = {
             "loss": epoch_loss,
             "acc": accuracy,
             "epoch_time": time.time()-start,
             "best_loss": best_loss[1],
             "best_acc": best_accuracy[1],
-        })
+        }
+        t.set_description(
+            f'Epoch: {epoch+1} -> Loss: {epoch_loss:.3f} | Acc: {accuracy:.3f} %')
 
     train_time = time.time()-train_start
-    print(f'Train time: {train_time:.3f} s')
-    print(f'Accuracy: {best_accuracy}')
-    print(f'Loss: {best_loss}')
+    # print(f'Train time: {train_time:.3f} s')
+    # print(f'Accuracy: {best_accuracy}')
+    # print(f'Loss: {best_loss}')
 
-    training_report["loss"] = best_loss[1]
-    training_report["acc"] = best_accuracy[1]
-    training_report["loss_fn"] = f'{type(loss_fn).__name__}'
-    training_report["optimizer"] = f'{type(optimizer).__name__}'
+    report["loss"] = best_loss[1]
+    report["acc"] = best_accuracy[1]
+    report["loss_fn"] = f'{type(loss_fn).__name__}'
+    report["optimizer"] = f'{type(optimizer).__name__}'
+    report["train_time"] = train_time
 
-    with open("training_report.json", 'w') as dumper:
-        json.dump(training_report, dumper)
+    return report
 
 
 def eval(configs: Conv_Configs):
@@ -88,24 +94,37 @@ def eval(configs: Conv_Configs):
     data = configs.eval_loader
     loss_fn = configs.loss_fn
 
+    report = {}
     start = time.time()
     model.to(device)
     model.eval()
     running_loss = 0
-    for x, y_true in data:
-        x, y_true = x.to(device), y_true.to(device)
+    predictions = 0
+    with torch.no_grad():
+        for x, y_true in data:
+            x, y_true = x.to(device), y_true.to(device)
 
-        y = model(x)
-        loss = loss_fn(y, y_true)
-        running_loss += loss.item()
+            y = model(x)
+            loss = loss_fn(y, y_true)
+            running_loss += loss.item()
 
-    eval_time = time.time()-start
-    print(f'Eval time: {eval_time:.3f} s')
-    print(f'Eval loss = {running_loss/len(data)}')
+            predictions += (torch.argmax(y, dim=1) == y_true).sum().item()
+
+    return {
+        "loss": running_loss/len(data),
+        "acc": float(predictions/len(data.dataset)*100),
+        "eval_time": time.time()-start,
+    }
 
 
 if __name__ == "__main__":
 
-    model_configs = Conv_Configs(MNIST().mnist, DEFAULT_DEVICE)
+    model_configs = Conv_Configs(MNIST().mnist, DEFAULT_DEVICE, epochs=10)
 
-    train(model_configs)
+    report = {}
+    report["training"] = train(model_configs)
+    report["eval"] = eval(model_configs)
+    report["hash"] = model_configs.hash
+
+    with open("training_report.json", 'w') as dumper:
+        json.dump(report, dumper)
