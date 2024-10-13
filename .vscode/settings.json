@@ -22,6 +22,7 @@
         "randn",
         "relu",
         "softmax",
+        "sysname",
         "tqdm",
         "trange",
         "tril",

@@ -63,3 +63,7 @@ src/ml-adder/.env
 
 src/ml-adder/adnet
 tutorials/embeddings/__pycache__/
+
+src/grads/__pycache__/
+src/grads/data
+src/grads/training_report.json
