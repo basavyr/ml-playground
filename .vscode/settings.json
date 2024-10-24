@@ -15,6 +15,7 @@
         "logsoftmax",
         "Morphence",
         "multinomial",
+        "Nesterov",
         "NGRAM",
         "ngrams",
         "OPENAI",
