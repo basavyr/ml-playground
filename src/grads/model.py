@@ -23,9 +23,9 @@ class Conv_Model(nn.Module):
         x = self.conv(x)
         x = x.view(x.shape[0], -1)
         x = self.linear(x)
-        if not self.logits:
-            return self.log_softmax(x)  # apply softmax instead of raw logits
-        return x
+        if self.logits == True:
+            return x
+        return self.log_softmax(x)
 
     def _init_conv_layers(self):
         layers = nn.Sequential(OrderedDict([("conv1", nn.Conv2d(
