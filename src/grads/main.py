@@ -5,6 +5,7 @@ import torch.utils.data
 import torch.nn as nn
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from tqdm import trange
 import time
@@ -32,6 +33,19 @@ def collect_grads(model: nn.Module, collapsed: bool = True) -> list[float]:
         from itertools import chain
         return list(chain.from_iterable([g[1] for g in grads]))
     return grads
+
+
+def plot_grads(report: Mapping[str, Any]):
+    fig = plt.figure(1, figsize=(24, 12))
+    for idx, (k, v) in enumerate(report["training"].items()):
+        if k == f'epoch-{idx+1}':
+            ax = fig.add_subplot(1, epochs, idx+1)
+            plt.hist(v["grads"], bins=100, log=True)
+            ax.set_xlim(-0.25, 0.25)
+            v["grads"] = str(v["grads"])
+
+    plt.tight_layout()
+    plt.savefig("grads.png", dpi=300, bbox_inches='tight')
 
 
 def train(training_configs: Conv_Configs, with_grads: bool = False, save_state_dict: bool = False):
@@ -91,7 +105,7 @@ def train(training_configs: Conv_Configs, with_grads: bool = False, save_state_d
             "epoch_time": time.time()-start,
             "best_loss": best_loss[1],
             "best_acc": best_accuracy[1],
-            "epoch_grads": collect_grads(model),
+            "grads": collect_grads(model),
         }
         t.set_description(
             f'Epoch: {epoch+1} -> Loss: {epoch_loss:.3f} | Acc: {accuracy:.3f} %')
@@ -155,13 +169,14 @@ if __name__ == "__main__":
         "cifar100": DotDict({"data": CIFAR100().cifar100, "num_classes": 100, "in_channels": 3, "out_channels": 32, "height": 32, "width": 32}),
         "mnist": DotDict({"data": MNIST().mnist, "num_classes": 10, "in_channels": 1, "out_channels": 32, "height": 28, "width": 28}),
     })
-    data_cfgs = data_configs.cifar10  
+    data_cfgs = data_configs.cifar10
+    epochs = 10
 
     model_configs = Conv_Configs(data_cfgs.data,
                                  device=DEFAULT_DEVICE,
-                                 epochs=20,
-                                 n_layers=5,
-                                 hidden_units=256,
+                                 epochs=epochs,
+                                 n_layers=3,
+                                 hidden_units=128,
                                  num_classes=data_cfgs.num_classes,
                                  in_channels=data_cfgs.in_channels,
                                  out_channels=data_cfgs.out_channels,
@@ -180,6 +195,8 @@ if __name__ == "__main__":
     report["training"] = train(model_configs, save_state_dict=True)
     # --------- measure model performance ---------
     report["eval"] = eval(model_configs)
+
+    plot_grads(report)
 
     with open("training_report.json", 'w') as dumper:
         json.dump(report, dumper)
