@@ -4,6 +4,7 @@ import torch
 import torch.utils.data
 import torch.nn as nn
 
+import numpy as np
 
 from tqdm import trange
 import time
@@ -18,6 +19,19 @@ from config import Conv_Configs
 
 DEFAULT_DEVICE: torch.device = torch.device("mps") if os.uname(
 ).sysname == "Darwin" else torch.device("cpu")
+
+
+def collect_grads(model: nn.Module, collapsed: bool = True) -> list[float]:
+    grads = []
+    for p in model.named_parameters():
+        param_name, param_value = p
+        param_grad = param_value.grad.detach().cpu().flatten().numpy()
+        if param_grad is not None:
+            grads.append((param_name, param_grad))
+    if collapsed == True:
+        from itertools import chain
+        return list(chain.from_iterable([g[1] for g in grads]))
+    return grads
 
 
 def train(training_configs: Conv_Configs, with_grads: bool = False, save_state_dict: bool = False):
@@ -77,6 +91,7 @@ def train(training_configs: Conv_Configs, with_grads: bool = False, save_state_d
             "epoch_time": time.time()-start,
             "best_loss": best_loss[1],
             "best_acc": best_accuracy[1],
+            "epoch_grads": collect_grads(model),
         }
         t.set_description(
             f'Epoch: {epoch+1} -> Loss: {epoch_loss:.3f} | Acc: {accuracy:.3f} %')
