@@ -4,13 +4,15 @@ import torch
 import torch.utils.data
 import torch.nn as nn
 
+
+from tqdm import trange
 import time
 import os
 import sys
 import json
 
 import model as models
-from data import MNIST
+from data import MNIST, CIFAR10, CIFAR100
 from config import Conv_Configs
 
 
@@ -18,7 +20,14 @@ DEFAULT_DEVICE: torch.device = torch.device("mps") if os.uname(
 ).sysname == "Darwin" else torch.device("cpu")
 
 
-def train(training_configs: Conv_Configs, save_state_dict: bool = False):
+def train(training_configs: Conv_Configs, with_grads: bool = False, save_state_dict: bool = False):
+    """
+    - trains a model based on a configuration
+
+    Args:
+    - `with_grads`: if set to `True` it will print grads during the training
+    - `save_state_dict`: if set to `True` it will save the model locally
+    """
     device = training_configs.device
     loss_fn = training_configs.loss_fn
     optimizer = training_configs.optimizer
@@ -35,8 +44,6 @@ def train(training_configs: Conv_Configs, save_state_dict: bool = False):
     train_start = time.time()
     model.to(device)
     model.train()
-
-    from tqdm import trange
 
     for epoch in (t := trange(0, epochs)):
         start = time.time()
@@ -76,8 +83,8 @@ def train(training_configs: Conv_Configs, save_state_dict: bool = False):
 
     train_time = time.time()-train_start
 
-    report["loss"] = best_loss[1]
-    report["acc"] = best_accuracy[1]
+    report["loss"] = best_loss
+    report["acc"] = best_accuracy
     report["train_time"] = train_time
 
     if save_state_dict:
@@ -102,6 +109,7 @@ def eval(configs: Conv_Configs):
             x, y_true = x.to(device), y_true.to(device)
 
             y = model(x)
+
             loss = loss_fn(y, y_true)
             running_loss += loss.item()
 
@@ -114,9 +122,39 @@ def eval(configs: Conv_Configs):
     }
 
 
+class DotDict(dict):
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def __setattr__(self, attr, value):
+        self[attr] = value
+
+    def __delattr__(self, attr):
+        del self[attr]
+
+
 if __name__ == "__main__":
 
-    model_configs = Conv_Configs(MNIST().mnist, DEFAULT_DEVICE, epochs=10)
+    data_configs = DotDict({
+        "cifar10": DotDict({"data": CIFAR10().cifar10, "num_classes": 10, "in_channels": 3, "out_channels": 32, "height": 32, "width": 32}),
+        "cifar100": DotDict({"data": CIFAR100().cifar100, "num_classes": 100, "in_channels": 3, "out_channels": 32, "height": 32, "width": 32}),
+        "mnist": DotDict({"data": MNIST().mnist, "num_classes": 10, "in_channels": 1, "out_channels": 32, "height": 28, "width": 28}),
+    })
+    data_cfgs = data_configs.cifar10  
+
+    model_configs = Conv_Configs(data_cfgs.data,
+                                 device=DEFAULT_DEVICE,
+                                 epochs=20,
+                                 n_layers=5,
+                                 hidden_units=256,
+                                 num_classes=data_cfgs.num_classes,
+                                 in_channels=data_cfgs.in_channels,
+                                 out_channels=data_cfgs.out_channels,
+                                 image_size=(data_cfgs.height,
+                                             data_cfgs.width),
+                                 maxpool=True,
+                                 logits=True,
+                                 use_adam=False)
 
     report = {}
     report["hash"] = model_configs.hash
