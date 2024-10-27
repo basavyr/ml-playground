@@ -25,9 +25,15 @@ class Conv_Configs():
         'weight_decay': 1e-4    # L2 regularization (optional)
     }
 
-    def __init__(self, data: tuple, device: torch.device, epochs: int = 1, n_layers: int = 3, hidden_units: int = 32, out_channels: int = 8, logits: bool = False, use_adam: bool = False) -> None:
-        self.model: nn.Module = m.Conv_Model(
-            n_layers=n_layers, hidden_units=hidden_units, out_channels=out_channels, logits=logits)
+    def __init__(self, data: tuple, device: torch.device, epochs: int, n_layers: int, hidden_units: int, num_classes: int, in_channels: int, out_channels: int, image_size: tuple[int, int], maxpool: bool, logits: bool = False, use_adam: bool = False) -> None:
+        self.model: nn.Module = m.Conv_Model(num_classes=num_classes,
+                                             n_layers=n_layers,
+                                             hidden_units=hidden_units,
+                                             in_channels=in_channels,
+                                             out_channels=out_channels,
+                                             image_size=image_size,
+                                             maxpool=maxpool,
+                                             logits=logits)
         self.device = device
         self.loss_fn = torch.nn.CrossEntropyLoss() if logits == True else torch.nn.NLLLoss()
         self.optimizer = self.adam(self.model.parameters(), **self.adam_kwargs) if use_adam == True else self.sgd(
