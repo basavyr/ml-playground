@@ -15,6 +15,8 @@ Several key architectures are studied and measured in terms of training & infere
 
 The script [`transformer.py`](./benchmarks/transformer.py) aims at simulating a training procedure for a Decoder-only model (i.e., [`nn.TransformerDecoder`](https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerDecoder.html) where the target mask and encoder output - memory - are irrelevant). The data is synthetically generated via [`torch.randn`](https://docs.pytorch.org/docs/stable/generated/torch.randn.html).
 
+Details on how the training was designed to be as efficient and minimal as possible are given [here](./benchmarks/docs.md).
+
 1. Install PyTorch. **If an external GPU is available (such as NVIDIA), make sure PyTorch is installed with CUDA support**.
      - The "Get started" guide from PyTorch available [here](https://pytorch.org/get-started/locally/) shows how to install on Windows or Linux
      - ⚠️ **CUDA Toolkit must be pre-configured beforehand**
