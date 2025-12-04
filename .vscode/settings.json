@@ -22,6 +22,7 @@
         "Nesterov",
         "NGRAM",
         "ngrams",
+        "nhead",
         "OPENAI",
         "optim",
         "pycache",
