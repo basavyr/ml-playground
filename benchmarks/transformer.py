@@ -34,14 +34,16 @@ class Transformer(nn.Module):
     def __init__(self, d_model: int, n_layers: int, n_heads: int, vocab_size: int):
         super(Transformer, self).__init__()
         self.decoder_layer = nn.TransformerDecoderLayer(d_model=d_model,
-                                                        nhead=n_heads)
+                                                        nhead=n_heads, batch_first=True)
         self.decoder = nn.TransformerDecoder(
             decoder_layer=self.decoder_layer, num_layers=n_layers)
         self.lm_head = nn.Linear(d_model, vocab_size)
+        self.d_model = d_model
 
     def forward(self, tgt: torch.Tensor, tgt_mask: torch.Tensor):
+        memory = torch.zeros(tgt.shape[0], 0, self.d_model).to(tgt.device)
         decoder_output = self.decoder(tgt=tgt,
-                                      memory=tgt,
+                                      memory=memory,
                                       tgt_mask=tgt_mask)
         logits = self.lm_head(decoder_output)
 
@@ -65,10 +67,12 @@ def train_model(
         epoch_loss = 0.0
         for x, y_true in tqdm(train_loader, desc=f'Epoch {epoch+1}: Training transformer'):
             x, y_true = x.to(device), y_true.to(device)
+            mask = create_causal_mask(x.shape[1], device)
+
             optimizer.zero_grad()
 
             # TODO: a target mask should be applied
-            y = model(x, None)  # torch.Size([128, 32, 30000])
+            y = model(x, mask)  # torch.Size([128, 32, 30000])
 
             # shift targets and logits
             y_shifted = y[:, :-1, :].contiguous()
@@ -98,7 +102,7 @@ def main():
     num_samples = 10000
     vocab_size = 30000
     batch_size = 8
-    sequence_length = 8
+    sequence_length = 32
     embedding_dim = 384
 
     # model configs
