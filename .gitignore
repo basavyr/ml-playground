@@ -67,3 +67,6 @@ tutorials/embeddings/__pycache__/
 src/grads/__pycache__/
 src/grads/data
 src/grads/training_report.json
+
+benchmarks/.python-version
+benchmarks/__pycache__
