@@ -1,3 +1,4 @@
+import logging
 import torch
 
 from torch.types import Device
@@ -13,3 +14,8 @@ def get_optimal_device(force_cuda: bool = False):
         return torch.device("mps")
     else:
         return torch.device("cpu")
+
+
+logging.basicConfig(level=logging.INFO,
+                    format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+log = logging.getLogger()
