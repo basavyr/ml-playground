@@ -7,7 +7,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader, Dataset
 
 # local imports
-from utils import get_optimal_device
+from utils import get_optimal_device, log
 
 
 class RandomDataset(Dataset):
@@ -41,22 +41,13 @@ class Transformer(nn.Module):
         self.vocab_size = vocab_size
         self.torch_dtype = torch_dtype
 
-    def forward(self, tgt: torch.Tensor):
-        memory = torch.zeros(
-            tgt.shape[0], 0, self.d_model, dtype=tgt.dtype).to(tgt.device)
-        tgt_mask = self.create_causal_mask(tgt)
+    def forward(self, tgt: torch.Tensor, memory: torch.Tensor, tgt_mask: torch.Tensor):
         decoder_output = self.decoder(tgt=tgt,
                                       memory=memory,
                                       tgt_mask=tgt_mask)
         logits = self.lm_head(decoder_output)
 
         return logits
-
-    def create_causal_mask(self, tgt: torch.Tensor):
-        # tgt shape: B, S, D_MODEL
-        mask = nn.Transformer.generate_square_subsequent_mask(
-            sz=tgt.shape[1], device=tgt.device, dtype=tgt.dtype)
-        return mask
 
 
 def train_model(
@@ -76,9 +67,13 @@ def train_model(
         epoch_loss = 0.0
         for x, y_true in tqdm(train_loader, desc=f'Epoch {epoch+1}: Training transformer'):
             x, y_true = x.to(device), y_true.to(device)
+            memory = torch.zeros(
+                x.shape[0], 0, x.shape[-1]).to(x.device, dtype=x.dtype)
+            tgt_mask = torch.nn.Transformer.generate_square_subsequent_mask(
+                x.shape[1], x.device, dtype=torch.float32)
             optimizer.zero_grad()
 
-            y = model(x)  # torch.Size([128, 32, 30000])
+            y = model(x, memory, tgt_mask)  # torch.Size([128, 32, 30000])
 
             # shift targets and logits
             y_shifted = y[:, :-1, :].contiguous()
@@ -94,7 +89,7 @@ def train_model(
             optimizer.step()
 
         epoch_loss /= len(train_loader.dataset)
-        print(f'Epoch {epoch+1}: Loss= {epoch_loss:.3f}')
+        log.info(f'Epoch {epoch+1}: Loss= {epoch_loss:.3f}')
 
 
 def main():
@@ -103,7 +98,7 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
     num_epochs = 10
     learning_rate = 1e-4
-    torch_dtype = torch.float16  # TODO test with bfloat16
+    torch_dtype = torch.float32  # TODO test with bfloat16
 
     # model configs
     d_model = 384
@@ -113,8 +108,8 @@ def main():
     # data configs
     embedding_dim = d_model
     vocab_size = 30000
-    num_samples = 10000
-    batch_size = 32
+    num_samples = 1000
+    batch_size = 24
     sequence_length = 128
 
     dataset = RandomDataset(num_samples=num_samples,
