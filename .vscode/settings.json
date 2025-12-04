@@ -9,6 +9,7 @@
         "cfgs",
         "convolutional",
         "cpython",
+        "CUDA",
         "dotenv",
         "ffwd",
         "Goodfellow",
