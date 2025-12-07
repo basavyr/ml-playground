@@ -8,7 +8,7 @@ import time
 from tqdm import tqdm
 
 # local imports
-from utils import get_optimal_device, log
+from utils import get_optimal_device, log, get_flops_approx
 
 
 class RandomDataset(Dataset):
@@ -107,7 +107,7 @@ def main():
     # training configs
     device = get_optimal_device()
     loss_fn = nn.CrossEntropyLoss()
-    num_epochs = 3
+    num_epochs = 10
     learning_rate = 1e-4
     torch_dtype = torch.float32  # TODO test with bfloat16
 
@@ -130,8 +130,7 @@ def main():
                             torch_dtype=torch_dtype)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-    _info = f'Training on {device} for {num_epochs} epochs.\n<<< Config >>>\nBatch Size={batch_size} | Total samples={num_samples}\nSequence Length={sequence_length}\nN_decoder_layers={n_layers} | num_attn_heads={n_heads} | d_k={d_model}\n{"="*80}'
-    log.info(_info)
+    log.info(f'Training on {device} for {num_epochs} epochs.\n<<< Config >>>\nBatch Size={batch_size} | Total samples={num_samples}\nSequence Length={sequence_length}\nN_decoder_layers={n_layers} | num_attn_heads={n_heads} | d_k={d_model}\n{"="*80}')
     model = Transformer(d_model=d_model,
                         n_layers=n_layers,
                         n_heads=n_heads,
@@ -147,17 +146,33 @@ def main():
                 learning_rate=learning_rate)
     train_duration = (time.monotonic_ns() - train_start)*1e-9
 
-    flops_per_attention = 4*sequence_length * \
-        d_model**2 + 2*sequence_length**2*d_model
-    flops_per_ffn = 2*sequence_length*d_model*2048
-    flops_per_lm_head = sequence_length*d_model*vocab_size
+    # # pytorch implementation
+    # fake_x = torch.randn(batch_size, sequence_length,
+    #                      d_model, dtype=torch.float32).to(device)
+    # mem = torch.zeros(fake_x.shape[0], 0, d_model).to(
+    #     fake_x.device, dtype=fake_x.dtype)
+    # tgt_mask = torch.nn.Transformer.generate_square_subsequent_mask(
+    #     fake_x.shape[1])
 
-    flops_per_layer = flops_per_attention + flops_per_ffn + flops_per_lm_head
-    flops_per_batch = batch_size * n_layers * flops_per_layer
-    flops_total = 3 * flops_per_batch * \
-        ((num_samples + batch_size - 1) // batch_size) * num_epochs
-    log.info(f'Total operations: {flops_total/1e12:.4f} TFLOPs')
-    log.info(f'Achieved avg. << {(flops_total/1e12)/train_duration:.4f} >> TFLOPS')
+    # total_flops_batch_iter = get_flops(
+    #     model, device, (fake_x, mem, tgt_mask), is_custom_transformer=True, with_backward=True)
+    # num_batches = (num_samples + batch_size - 1) // batch_size
+    # total_flops_pt = num_epochs * num_batches * total_flops_batch_iter
+    # log.info(
+    #     f'Achieved avg. << {(total_flops_pt/1e12)/train_duration:.4f} >> TFLOPS')
+
+    # from scratch
+    total_flops_approx = get_flops_approx(
+        d_model=d_model,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        sequence_length=sequence_length,
+        num_samples=num_samples,
+        vocab_size=vocab_size,
+        num_epochs=num_epochs)
+
+    log.info(
+        f'Achieved avg. << {(total_flops_approx/1e12)/train_duration:.4f} >> TFLOPS')
 
 
 if __name__ == "__main__":
