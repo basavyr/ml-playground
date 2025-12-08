@@ -70,3 +70,4 @@ src/grads/training_report.json
 
 benchmarks/.python-version
 benchmarks/__pycache__
+benchmarks/data/

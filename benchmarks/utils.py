@@ -1,7 +1,13 @@
 import torch
 from torch.types import Device
 from torch.utils.flop_counter import FlopCounterMode
+
+import urllib
+import shutil
+import zipfile
 from typing import Tuple
+import os
+import sys
 
 import logging
 logging.basicConfig(level=logging.INFO,
@@ -96,3 +102,48 @@ def get_flops(
     if is_training:
         model.train()
     return flop_counter.get_total_flops()
+
+
+def download_and_prepare_tiny_imagenet(root_dir: str = "data"):
+    base_name = "tiny-imagenet-200"
+    url = f"https://cs231n.stanford.edu/tiny-imagenet-200.zip"
+    zip_path = os.path.join(root_dir, "tiny-imagenet-200.zip")
+
+    # Move train and val images into a single ImageFolder-style directory
+    tiny_imagenet_dir = os.path.join(root_dir, base_name)
+    os.makedirs(tiny_imagenet_dir, exist_ok=True)
+
+    if not os.path.isfile(zip_path):
+        print(f"Downloading Tiny ImageNet to {zip_path} ...")
+        urllib.request.urlretrieve(url, zip_path)
+    else:
+        print(
+            f"Skipping download since .zip file already exists -> {zip_path}")
+
+    extract_path = f"{root_dir}/extracted"
+    # print(f"Extracting to {extract_path}")
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_path)
+
+    # Move train images
+    train_dir = os.path.join(f'{extract_path}/{base_name}', "train")
+    for class_name in os.listdir(train_dir):
+        class_dir = os.path.join(train_dir, class_name, "images")
+        target_class_dir = os.path.join(tiny_imagenet_dir, class_name)
+        os.makedirs(target_class_dir, exist_ok=True)
+        for img in os.listdir(class_dir):
+            shutil.copy(os.path.join(class_dir, img),
+                        os.path.join(target_class_dir, img))
+    # Move val images
+    val_dir = os.path.join(f'{extract_path}/{base_name}', "val")
+    val_annotations = os.path.join(val_dir, "val_annotations.txt")
+    val_img_dir = os.path.join(val_dir, "images")
+    with open(val_annotations, 'r') as f:
+        for line in f:
+            img, class_name, *_ = line.strip().split('\t')
+            target_class_dir = os.path.join(tiny_imagenet_dir, class_name)
+            os.makedirs(target_class_dir, exist_ok=True)
+            shutil.copy(os.path.join(val_img_dir, img),
+                        os.path.join(target_class_dir, img))
+
+    print(f"Tiny ImageNet prepared at {tiny_imagenet_dir}")
