@@ -26,7 +26,14 @@ class RandomEmbeddings(Dataset):
 
 class StandardDatasets:
     """
-    .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(224)`
+    Helper tool for retrieving popular datasets.
+
+    Currently supported datasets::
+
+            SUPPORTED_DATASETS = ["mnist", "fashion",
+                            "cifar10", "cifar100", "tiny", "imagenet1k"]
+
+    .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(resize_to)`
     """
     SUPPORTED_DATASETS = ["mnist", "fashion",
                           "cifar10", "cifar100", "tiny", "imagenet1k"]
@@ -34,39 +41,43 @@ class StandardDatasets:
                                   "std": (0.3081,),
                                   "num_classes": 10,
                                   "num_channels": 1,
+                                  "img_size": 28,
                                   },
                         "fashion": {"mean": (0.2860,),
                                     "std": (0.3530,),
                                     "num_classes": 10,
                                     "num_channels": 1,
+                                    "img_size": 28,
                                     },
                         "cifar10": {"mean": (0.4914, 0.4822, 0.4465),
                                     "std": (0.2470, 0.2435, 0.2616),
                                     "num_classes": 10,
                                     "num_channels": 3,
+                                    "img_size": 32,
                                     },
                         "cifar100": {"mean": (0.5071, 0.4867, 0.4408),
                                      "std": (0.2675, 0.2565, 0.2761),
                                      "num_classes": 100,
                                      "num_channels": 3,
+                                     "img_size": 32,
                                      },
                         "tiny": {"mean": (0.4804, 0.4482, 0.3976),
                                  "std": (0.2764, 0.2689, 0.2817),
                                  "num_classes": 200,
                                  "num_channels": 3,
+                                 "img_size": 64,
                                  },
                         "imagenet1k": {"mean": (0.485, 0.456, 0.406),
                                        "std": (0.229, 0.224, 0.225),
                                        "num_classes": 1000,
                                        "num_channels": 3,
-                                       },
-                        }
+                                       }, }
 
     def __init__(self, default_data_dir: str):
         os.makedirs(default_data_dir, exist_ok=True)
         self.default_data_dir = default_data_dir
 
-    def get_dataset(self, dataset_name: str, custom_image_folder: str | None = None, download: bool = False) -> Dataset | None:
+    def get_dataset(self, dataset_name: str, custom_image_folder: str | None = None, download: bool = False, resize_to: int = -1) -> Dataset | None:
         """
         - Helper method for preparing a standard Torchvision dataset such as MNIST, CIFAR10, etc.
         - The current implementation also supports custom datasets such as [Tiny ImageNet 200](https://gist.github.com/basavyr/be29dde85dbd9623b3e41188ed0e0592), which can be provided as a path.
@@ -85,6 +96,13 @@ class StandardDatasets:
         assert dataset_name in self.SUPPORTED_DATASETS, f"Unsupported dataset type (Currently supported datasets: {self.SUPPORTED_DATASETS})"
         self.dataset_mapping = self.DATASETS_MAPPING[dataset_name]
         dataset_name = dataset_name.lower()
+        if resize_to > 0:
+            self.resize_to = resize_to
+            self.input_size: int = 3 * resize_to**2
+        else:
+            self.resize_to = self.dataset_mapping['img_size']
+            self.input_size: int = 3 * self.dataset_mapping['img_size']**2
+        self.num_classes = self.dataset_mapping["num_classes"]
         ds = None
         if custom_image_folder is None:
             root_dir = self.default_data_dir
@@ -130,5 +148,6 @@ class StandardDatasets:
         tf_list.transforms.append(transforms.Normalize(
             mean=self.dataset_mapping['mean'], std=self.dataset_mapping['std']))
         if force_resize:
-            tf_list.transforms.append(transforms.RandomResizedCrop(224))
+            tf_list.transforms.append(
+                transforms.RandomResizedCrop(self.resize_to))
         return tf_list
