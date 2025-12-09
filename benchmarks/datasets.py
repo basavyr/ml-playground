@@ -25,29 +25,37 @@ class RandomEmbeddings(Dataset):
 
 
 class StandardDatasets:
-    """
-    .. note::
-        Before using this class with Tiny Imagenet or Imagenet, it is required to download and prepare the datasets in the root directory, such that they can be used through `ImageFolder`.
-    """
     SUPPORTED_DATASETS = ["mnist", "fashion",
                           "cifar10", "cifar100", "tiny", "imagenet1k"]
     DATASETS_MAPPING = {"mnist": {"mean": (0.1307,),
                                   "std": (0.3081,),
+                                  "num_classes": 10,
+                                  "num_channels": 1,
                                   },
                         "fashion": {"mean": (0.2860,),
                                     "std": (0.3530,),
+                                    "num_classes": 10,
+                                    "num_channels": 1,
                                     },
                         "cifar10": {"mean": (0.4914, 0.4822, 0.4465),
                                     "std": (0.2470, 0.2435, 0.2616),
+                                    "num_classes": 10,
+                                    "num_channels": 3,
                                     },
                         "cifar100": {"mean": (0.5071, 0.4867, 0.4408),
                                      "std": (0.2675, 0.2565, 0.2761),
+                                     "num_classes": 100,
+                                     "num_channels": 3,
                                      },
                         "tiny": {"mean": (0.4804, 0.4482, 0.3976),
                                  "std": (0.2764, 0.2689, 0.2817),
+                                 "num_classes": 200,
+                                 "num_channels": 3,
                                  },
                         "imagenet1k": {"mean": (0.485, 0.456, 0.406),
                                        "std": (0.229, 0.224, 0.225),
+                                       "num_classes": 1000,
+                                       "num_channels": 3,
                                        },
                         }
 
@@ -56,6 +64,23 @@ class StandardDatasets:
         self.default_data_dir = default_data_dir
 
     def get_dataset(self, dataset_name: str, custom_image_folder: str | None = None, download: bool = False) -> Dataset | None:
+        """
+        - Helper method for preparing a standard Torchvision dataset such as MNIST, CIFAR10, etc.
+        - The current implementation also supports custom datasets such as [Tiny ImageNet 200](https://gist.github.com/basavyr/be29dde85dbd9623b3e41188ed0e0592), which can be provided as a path.
+
+        The method can be used in the following way(s)::
+
+            dataset = dataset_helper.get_dataset(
+                        dataset_name="tiny", custom_image_folder="./data/tiny-imagenet-200", download=False)
+            dataset = dataset_helper.get_dataset(
+                        dataset_name="mnist", download=True)
+
+        .. note:: Datasets such as **Tiny Imagenet 200** requires argument `custom_image_folder` to be provided by the user. The path must point to the directory in which all the samples are structured in the class/label-specific subfolder. This is required by `ImageFolder` wrapper.
+
+        .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(224)`
+
+        .. info:: For **Tiny Imagenet 200**, we provide support for download when `download=True`, which is assured through `utils.download_and_prepare_tiny_imagenet`
+        """
         assert dataset_name in self.SUPPORTED_DATASETS, f"Unsupported dataset type (Currently supported datasets: {self.SUPPORTED_DATASETS})"
         self.dataset_mapping = self.DATASETS_MAPPING[dataset_name]
         dataset_name = dataset_name.lower()
@@ -78,6 +103,8 @@ class StandardDatasets:
             tf = self.get_transform(force_resize=True)
             ds = CIFAR100(root=root_dir, transform=tf, download=download)
         elif dataset_name == "tiny":
+            assert custom_image_folder is not None, KeyError(
+                "Tiny ImageNet 200 requires `custom_image_folder` argument to be provided.")
             if download:
                 tiny_imagenet_dir = download_and_prepare_tiny_imagenet(
                     root_dir)
