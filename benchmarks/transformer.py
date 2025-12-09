@@ -1,6 +1,6 @@
 import torch
 from torch import nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 
 from typing import Callable
 import sys
