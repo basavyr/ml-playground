@@ -27,6 +27,7 @@
         "nhead",
         "OPENAI",
         "optim",
+        "preds",
         "pycache",
         "randn",
         "relu",
