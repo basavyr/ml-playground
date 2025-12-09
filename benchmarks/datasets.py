@@ -25,6 +25,9 @@ class RandomEmbeddings(Dataset):
 
 
 class StandardDatasets:
+    """
+    .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(224)`
+    """
     SUPPORTED_DATASETS = ["mnist", "fashion",
                           "cifar10", "cifar100", "tiny", "imagenet1k"]
     DATASETS_MAPPING = {"mnist": {"mean": (0.1307,),
@@ -77,8 +80,6 @@ class StandardDatasets:
 
         .. note:: Datasets such as **Tiny Imagenet 200** requires argument `custom_image_folder` to be provided by the user. The path must point to the directory in which all the samples are structured in the class/label-specific subfolder. This is required by `ImageFolder` wrapper.
 
-        .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(224)`
-
         .. info:: For **Tiny Imagenet 200**, we provide support for download when `download=True`, which is assured through `utils.download_and_prepare_tiny_imagenet`
         """
         assert dataset_name in self.SUPPORTED_DATASETS, f"Unsupported dataset type (Currently supported datasets: {self.SUPPORTED_DATASETS})"
@@ -122,12 +123,12 @@ class StandardDatasets:
 
     def get_transform(self, force_3_channels: bool = False, force_resize: bool = False):
         tf_list = transforms.Compose([])
-        tf_list.transforms.append(transforms.ToTensor())
-        tf_list.transforms.append(transforms.Normalize(
-            mean=self.dataset_mapping['mean'], std=self.dataset_mapping['std']))
         if force_3_channels:
             tf_list.transforms.append(
                 transforms.Grayscale(num_output_channels=3))
+        tf_list.transforms.append(transforms.ToTensor())
+        tf_list.transforms.append(transforms.Normalize(
+            mean=self.dataset_mapping['mean'], std=self.dataset_mapping['std']))
         if force_resize:
             tf_list.transforms.append(transforms.RandomResizedCrop(224))
         return tf_list
