@@ -23,3 +23,28 @@ class Transformer(nn.Module):
         logits = self.lm_head(decoder_output)
 
         return logits
+
+
+class LinearNet(nn.Module):
+    def __init__(self, num_hidden_layers: int, input_size: int, hidden_dim: int, output_size: int):
+        super(LinearNet, self).__init__()
+        assert num_hidden_layers > 1, "The neural network must have at least one hidden layers (num_hidden_layers > 1)"
+        self.output_size = output_size
+        self.num_classes = output_size
+        self.input_size = input_size
+        self.num_features = input_size
+
+        self.layers = nn.Sequential(
+            nn.Linear(in_features=input_size, out_features=hidden_dim), nn.ReLU())
+        for _ in range(num_hidden_layers):
+            self.layers.append(
+                nn.Linear(in_features=hidden_dim, out_features=hidden_dim))
+            self.layers.append(
+                nn.ReLU())
+        self.layers.append(
+            nn.Linear(in_features=hidden_dim, out_features=output_size))
+
+    def forward(self, x: torch.Tensor):
+        x = x.view(x.shape[0], -1)  # flatten input -> B, C*H*W (2D)
+        logits = self.layers(x)
+        return logits
