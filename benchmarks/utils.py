@@ -104,7 +104,13 @@ def get_flops(
     return flop_counter.get_total_flops()
 
 
-def download_and_prepare_tiny_imagenet(root_dir: str = "data"):
+def download_and_prepare_tiny_imagenet(root_dir: str = "data") -> str:
+    """
+    - Utility for downloading the Tiny ImageNet 200 dataset as a zip file. It automatically extracts the archive and then moves original images into a dedicated directory with per-class label sub-folders.
+
+    .. note::
+    The method requires only a path where the entire process will be executed. As a result, a `./root_dir/tiny-imagenet-200` directory will be created. This path will be returned by default.
+    """
     base_name = "tiny-imagenet-200"
     url = f"https://cs231n.stanford.edu/tiny-imagenet-200.zip"
     zip_path = os.path.join(root_dir, "tiny-imagenet-200.zip")
@@ -121,29 +127,70 @@ def download_and_prepare_tiny_imagenet(root_dir: str = "data"):
             f"Skipping download since .zip file already exists -> {zip_path}")
 
     extract_path = f"{root_dir}/extracted"
-    # print(f"Extracting to {extract_path}")
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-        zip_ref.extractall(extract_path)
+    os.makedirs(extract_path, exist_ok=True)
 
-    # Move train images
-    train_dir = os.path.join(f'{extract_path}/{base_name}', "train")
-    for class_name in os.listdir(train_dir):
-        class_dir = os.path.join(train_dir, class_name, "images")
-        target_class_dir = os.path.join(tiny_imagenet_dir, class_name)
-        os.makedirs(target_class_dir, exist_ok=True)
-        for img in os.listdir(class_dir):
-            shutil.copy(os.path.join(class_dir, img),
-                        os.path.join(target_class_dir, img))
-    # Move val images
-    val_dir = os.path.join(f'{extract_path}/{base_name}', "val")
-    val_annotations = os.path.join(val_dir, "val_annotations.txt")
-    val_img_dir = os.path.join(val_dir, "images")
-    with open(val_annotations, 'r') as f:
-        for line in f:
-            img, class_name, *_ = line.strip().split('\t')
+    try:
+        zip_content = os.listdir(f'{extract_path}/{base_name}')
+    except FileNotFoundError or FileExistsError:
+        zip_content = None
+    unzip = True
+    if os.path.isdir(extract_path) and zip_content is not None and ('test' in zip_content and 'train' in zip_content and 'val' in zip_content):
+        unzip = False
+
+    if unzip:
+        print(f"Extracting to {extract_path}")
+        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+            zip_ref.extractall(extract_path)
+    else:
+        print(
+            f'Skipping zip extraction since files already exist -> {extract_path}/{base_name}')
+
+    if not validate_tiny_imagenet_image_folder(tiny_imagenet_dir):
+        # Move train images
+        train_dir = os.path.join(f'{extract_path}/{base_name}', "train")
+        for class_name in os.listdir(train_dir):
+            class_dir = os.path.join(train_dir, class_name, "images")
             target_class_dir = os.path.join(tiny_imagenet_dir, class_name)
             os.makedirs(target_class_dir, exist_ok=True)
-            shutil.copy(os.path.join(val_img_dir, img),
-                        os.path.join(target_class_dir, img))
-
+            for img in os.listdir(class_dir):
+                shutil.copy(os.path.join(class_dir, img),
+                            os.path.join(target_class_dir, img))
+        # Move val images
+        val_dir = os.path.join(f'{extract_path}/{base_name}', "val")
+        val_annotations = os.path.join(val_dir, "val_annotations.txt")
+        val_img_dir = os.path.join(val_dir, "images")
+        with open(val_annotations, 'r') as f:
+            for line in f:
+                img, class_name, *_ = line.strip().split('\t')
+                target_class_dir = os.path.join(tiny_imagenet_dir, class_name)
+                os.makedirs(target_class_dir, exist_ok=True)
+                shutil.copy(os.path.join(val_img_dir, img),
+                            os.path.join(target_class_dir, img))
+    else:
+        print(
+            f'The path < {tiny_imagenet_dir} > is already a valid ImageFolder.\nSkipping .JPEG move & copy.')
     print(f"Tiny ImageNet prepared at {tiny_imagenet_dir}")
+    return tiny_imagenet_dir
+
+
+def get_dir_size(path):
+    total_size = 0
+    with os.scandir(path) as it:
+        for entry in it:
+            if entry.is_file():
+                total_size += entry.stat().st_size
+            elif entry.is_dir():
+                total_size += get_dir_size(entry.path)
+    return total_size
+
+
+def validate_tiny_imagenet_image_folder(image_folder_path: str) -> bool:
+    """
+    - Checks if the directory structure is valid and if all the samples are present
+    """
+    num_classes = 200
+    minimum_required_disk_size = 201.0
+    dir_size = get_dir_size(image_folder_path) / (1024**2)
+    if len(os.listdir(image_folder_path)) == num_classes and dir_size >= minimum_required_disk_size:
+        return True
+    return False
