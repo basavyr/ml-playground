@@ -132,5 +132,6 @@ if __name__ == "__main__":
         for ds_conf in all_ds_configs:
             ds_conf.download = True
 
+    # mnist and cifar100 by default
     run_model_workflow("linear", training_config, all_ds_configs[1])
-    run_model_workflow("resnet50", training_config, all_ds_configs[0])
+    run_model_workflow("resnet50", training_config, all_ds_configs[-1])
