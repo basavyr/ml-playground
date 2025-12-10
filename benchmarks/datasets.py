@@ -2,7 +2,9 @@ import torch
 from torch.utils.data import Dataset
 from torchvision.datasets import MNIST, FashionMNIST, CIFAR10, CIFAR100, ImageFolder
 from torchvision import transforms
+
 import os
+from dataclasses import dataclass
 
 from utils import download_and_prepare_tiny_imagenet, validate_tiny_imagenet_image_folder
 
@@ -22,6 +24,16 @@ class RandomEmbeddings(Dataset):
 
     def __getitem__(self, idx):
         return self.x[idx], self.y[idx]
+
+
+@dataclass
+class DatasetConfig:
+    name: str
+    path: str | None
+    download: bool = False
+    resize_to: int = -1
+    force_3_channels: bool = False
+    data_dir: str = "./data"
 
 
 class StandardDatasets:
