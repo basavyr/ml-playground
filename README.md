@@ -75,15 +75,14 @@ The script [`neural.py`](./benchmarks/neural.py) contains the complete benchmark
 
 Usage is straightforward. If the datasets are not already available on the system, one can use `FORCE_DOWNLOAD=1` environment variable when running the script.
 1. Navigate to `benchmarks/` and run:
-```bash
-FORCE_DOWNLOAD=1 python3 neural.py
-```
-or (if your datasets are already available)
-```bash
-python3 neural.py
-```
-
-After execution, metrics can be checked inside the `./logs` directory.
+    ```bash
+    FORCE_DOWNLOAD=1 python3 neural.py
+    ```
+    or (if your datasets are already available)
+    ```bash
+    python3 neural.py
+    ```
+2. After execution, metrics can be checked inside the `./logs` directory.
 
 > [!CAUTION]
 > The dataset retriever expects a default path to keep all files. In the current version this is set to `./data`. This will assure that everything is placed within the current working directory, but separated from the rest of implementation. Git is already configured to ignore everything in that path.
