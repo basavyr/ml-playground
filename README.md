@@ -86,12 +86,9 @@ python3 neural.py
 After execution, metrics can be checked inside the `./logs` directory.
 
 > [!CAUTION]
-> The dataset retriever expects a default path to keep all files. The most recommended path is `./data`. This will assure that everything is placed within the current working directory, but separated from the rest of implementation. Git is already configured to ignore everything in that path.
+> The dataset retriever expects a default path to keep all files. In the current version this is set to `./data`. This will assure that everything is placed within the current working directory, but separated from the rest of implementation. Git is already configured to ignore everything in that path.
 
-```python
-dataset_helper = StandardDatasets("./data")
-```
-This is set by default via the config in [`datasets.py`](./benchmarks/datasets.py):
+See default behavior of [`datasets.py`](./benchmarks/datasets.py) below:
 ```python
 @dataclass
 class DatasetConfig:
@@ -101,4 +98,9 @@ class DatasetConfig:
     resize_to: int = -1
     force_3_channels: bool = False
     data_dir: str = "./data"
+
+# then in neural.py 
+...
+dataset_helper = StandardDatasets("./data")
+...
 ```
