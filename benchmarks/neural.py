@@ -144,6 +144,6 @@ if __name__ == "__main__":
             ds_conf.download = True
 
     # mnist and cifar100 by default
-    # run_model_workflow("linear", training_config, all_ds_configs[1])
+    run_model_workflow("linear", training_config, all_ds_configs[1])
     run_model_workflow("resnet50", training_config, all_ds_configs[-1])
     log.info(f'System info: {os.uname().nodename}')
