@@ -94,7 +94,7 @@ def run_model_workflow(
     training_config: TrainingConfigs,
     dataset_config: DatasetConfig,
 ):
-    print(f'{"="*20} Benchmark {model_type} architecture {"="*20}')
+    log.info(f'{"="*20} Benchmark {model_type} architecture {"="*20}')
     # -------- dataset  --------
     dataset_helper = StandardDatasets(dataset_config.data_dir)
     dataset = dataset_helper.get_dataset(

@@ -11,6 +11,18 @@ Several key architectures are studied and measured in terms of training & infere
 - convolutional neural networks
 - transformers (decoders only)
 
+The first two architectures are tested in the script [`neural.py`](./benchmarks/neural.py), while the latter is tested in [`transformer.py`](./benchmarks/transformer.py).
+
+### Benchmark metrics
+
+Currently (December 2025), the key performance metric tracked for the Transformer implementation is the total number of **Floating-Point-Operations (FLOP)**. Moreover, since the entire training process is tracked, one can also determine the total number of operations per second, or FLOPS for short. The way of determining the actual FLOPS resides from well-established formulas, which approximate the number of operations on the accelerator. Typically, a matrix multiplication (GEMM) is considered as two FLOP, since it is a Fused-Matrix-Multiply-Accumulate op (FMA or MAC) consisting of one multiplication and one addition (hence the 1MAC=2FLOP).
+
+There are plenty of useful resources that can help to determine the FLOP counter on transformer models. Below are several:
+- https://arxiv.org/pdf/2001.08361
+- https://epoch.ai/blog/backward-forward-FLOP-ratio
+- https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html
+- https://docs.nvidia.com/deeplearning/performance/dl-performance-matrix-multiplication/index.html#math-mem
+
 ### Run Transformer Benchmark
 
 The script [`transformer.py`](./benchmarks/transformer.py) aims at simulating a training procedure for a Decoder-only model (i.e., [`nn.TransformerDecoder`](https://docs.pytorch.org/docs/stable/generated/torch.nn.TransformerDecoder.html) where the target mask and encoder output - memory - are irrelevant). The data is synthetically generated via [`torch.randn`](https://docs.pytorch.org/docs/stable/generated/torch.randn.html).
@@ -47,7 +59,23 @@ Details on how the training was designed to be as efficient and minimal as possi
     2025-12-04 14:23:25 - Achieved avg. << 3.7897 >> TFLOPS
     ```
 4. Compare your metrics with other systems ☺️ Keep in mind that this script handles all the logging is done automatically, so no additional prints are required.
+5. **Update**: After the benchmark is finished, available logs with the run can be checked inside the `./logs/` directory, which is created automatically after the first benchmark.
 
 ## Run DNN Benchmark
 
-TBD...
+The latest update (December 2025, sha-`8750b88862248f69e5f3b0aa016d5abaaf5b5060`) added new benchmarks for deep neural networks such as ResNet18 and even bigger ones like ResNet50. These can be tested against standard datasets such as MNIST, CIFAR10, and even Tiny ImageNet 200.
+
+The script [`neural.py`](./benchmarks/neural.py) contains the complete benchmarking workflow for these types of models.
+
+> [!NOTE]  
+> The implementation has a special helper [`StandardDatasets`](./benchmarks/utils.py), which can get the most popular datasets. Please read its docstring to understand how to use it for custom datasets (e.g., without relying on automatic download, providing custom paths, apply resize of pixel width, etc).
+
+> [!IMPORTANT]  
+> The FLOP counter for the deep neural network architecture is still under development, thus the only relevant performance indicator is **epoch time** (given a specific training configuration).
+
+Usage is straightforward. If the datasets are not already available on the system, one can use `FORCE_DOWNLOAD=1` environment variable when running the script:
+```bash
+FORCE_DOWNLOAD=1 python3 neural.py
+```
+
+After execution, metrics can be checked inside the `./logs` directory.
