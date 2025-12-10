@@ -33,7 +33,7 @@ class StandardDatasets:
             SUPPORTED_DATASETS = ["mnist", "fashion",
                             "cifar10", "cifar100", "tiny", "imagenet1k"]
 
-    .. info:: All datasets will be transformer according to the following ruleset: `num_channels=3` ; `RandomResizedCrop(resize_to)`
+    .. info:: By default, all datasets will be transformer without resizing and the original number of input channels will be kept.
     """
     SUPPORTED_DATASETS = ["mnist", "fashion",
                           "cifar10", "cifar100", "tiny", "imagenet1k"]
@@ -77,7 +77,7 @@ class StandardDatasets:
         os.makedirs(default_data_dir, exist_ok=True)
         self.default_data_dir = default_data_dir
 
-    def get_dataset(self, dataset_name: str, custom_image_folder: str | None = None, download: bool = False, resize_to: int = -1) -> Dataset | None:
+    def get_dataset(self, dataset_name: str, custom_image_folder: str | None = None, download: bool = False, resize_to: int = -1, force_3_channels: bool = False) -> Dataset | None:
         """
         - Helper method for preparing a standard Torchvision dataset such as MNIST, CIFAR10, etc.
         - The current implementation also supports custom datasets such as [Tiny ImageNet 200](https://gist.github.com/basavyr/be29dde85dbd9623b3e41188ed0e0592), which can be provided as a path.
@@ -98,10 +98,13 @@ class StandardDatasets:
         dataset_name = dataset_name.lower()
         if resize_to > 0:
             self.resize_to = resize_to
-            self.input_size: int = 3 * resize_to**2
+            self.input_size: int = 3 * \
+                resize_to**2 if force_3_channels else self.dataset_mapping["num_channels"] * resize_to**2
         else:
             self.resize_to = self.dataset_mapping['img_size']
-            self.input_size: int = 3 * self.dataset_mapping['img_size']**2
+            self.input_size: int = 3 * \
+                self.dataset_mapping['img_size']**2 if force_3_channels else self.dataset_mapping["num_channels"] * \
+                self.dataset_mapping['img_size']**2
         self.num_classes = self.dataset_mapping["num_classes"]
         ds = None
         if custom_image_folder is None:
@@ -110,10 +113,12 @@ class StandardDatasets:
             root_dir = custom_image_folder
             os.makedirs(root_dir, exist_ok=True)
         if dataset_name == "mnist":
-            tf = self.get_transform(force_3_channels=True, force_resize=True)
+            tf = self.get_transform(
+                force_3_channels=force_3_channels, force_resize=True)
             ds = MNIST(root=root_dir, transform=tf, download=download)
         elif dataset_name == "fashion":
-            tf = self.get_transform(force_3_channels=True, force_resize=True)
+            tf = self.get_transform(
+                force_3_channels=force_3_channels, force_resize=True)
             ds = FashionMNIST(root=root_dir, transform=tf, download=download)
         elif dataset_name == "cifar10":
             tf = self.get_transform(force_resize=True)
