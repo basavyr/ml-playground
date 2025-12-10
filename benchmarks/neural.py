@@ -9,15 +9,22 @@ from tqdm import tqdm
 import os
 import sys
 import time
+import logging
 from dataclasses import dataclass
 
 # local imports
-from utils import get_optimal_device, log
+from utils import get_optimal_device, generate_log_file
 from datasets import StandardDatasets, DatasetConfig
 from models import LinearNet
 
 
 FORCE_DOWNLOAD = os.getenv("FORCE_DOWNLOAD", "0")
+
+
+log_file, generated_at = generate_log_file("neural")
+logging.basicConfig(filename=log_file, level=logging.INFO,
+                    format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+log = logging.getLogger()
 
 
 @dataclass
@@ -37,6 +44,10 @@ def train_model(
     learning_rate: float,
     num_epochs: int,
 ):
+    generate_log_file('neural')
+    logging.basicConfig(level=logging.INFO,
+                        format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+    log = logging.getLogger()
     model.to(device)
     model.train()
     log.info(
@@ -83,7 +94,7 @@ def run_model_workflow(
     training_config: TrainingConfigs,
     dataset_config: DatasetConfig,
 ):
-    print(f'{"="*20} Training benchmark for {model_type} {"="*20}')
+    print(f'{"="*20} Benchmark {model_type} architecture {"="*20}')
     # -------- dataset  --------
     dataset_helper = StandardDatasets(dataset_config.data_dir)
     dataset = dataset_helper.get_dataset(
@@ -133,5 +144,6 @@ if __name__ == "__main__":
             ds_conf.download = True
 
     # mnist and cifar100 by default
-    run_model_workflow("linear", training_config, all_ds_configs[1])
+    # run_model_workflow("linear", training_config, all_ds_configs[1])
     run_model_workflow("resnet50", training_config, all_ds_configs[-1])
+    log.info(f'System info: {os.uname().nodename}')

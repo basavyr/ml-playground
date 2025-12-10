@@ -2,15 +2,23 @@ import torch
 from torch import nn as nn
 from torch.utils.data import DataLoader
 
+
 from typing import Callable
+import os
 import sys
 import time
 from tqdm import tqdm
 
 # local imports
-from utils import get_optimal_device, log, get_flops_approx
+from utils import get_optimal_device, get_flops_approx, generate_log_file
 from datasets import RandomEmbeddings
 from models import Transformer
+
+import logging
+log_file, generated_at = generate_log_file('transformer')
+logging.basicConfig(filename=log_file, level=logging.INFO,
+                    format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
+log = logging.getLogger()
 
 
 def train_transformer(
@@ -66,6 +74,7 @@ def train_transformer(
 
 
 if __name__ == "__main__":
+
     # model configs
     d_model = 384
     n_layers = 6
@@ -93,6 +102,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     log.info(f'Training on {device} for {num_epochs} epochs.\n<<< Config >>>\nBatch Size={batch_size} | Total samples={num_samples}\nSequence Length={sequence_length}\nN_decoder_layers={n_layers} | num_attn_heads={n_heads} | d_k={d_model}\n{"="*80}')
+
     model = Transformer(d_model=d_model,
                         n_layers=n_layers,
                         n_heads=n_heads,
@@ -119,3 +129,5 @@ if __name__ == "__main__":
 
     log.info(
         f'Achieved avg. << {(total_flops_approx/1e12)/train_duration:.4f} >> TFLOPS')
+
+    log.info(f'System info: {os.uname().nodename}')

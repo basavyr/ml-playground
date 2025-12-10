@@ -8,11 +8,19 @@ import zipfile
 from typing import Tuple
 import os
 import sys
+from datetime import datetime
 
-import logging
-logging.basicConfig(level=logging.INFO,
-                    format='%(asctime)s - %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
-log = logging.getLogger()
+
+def generate_log_file(model_type: str) -> Tuple[str, str]:
+    """
+    Returns a tuple with a name for a log file and the timestamp at which the log name has been generated
+    """
+    os.makedirs("./logs", exist_ok=True)
+    platform = os.uname().nodename
+    generated_at = datetime.now().isoformat(
+        sep="-", timespec='seconds').replace(":", "")
+    log_name = f'./logs/M{model_type}_{generated_at}_{platform}.log'
+    return log_name, generated_at
 
 
 def get_optimal_device(force_cuda: bool = False) -> Device:
