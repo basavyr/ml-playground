@@ -73,9 +73,32 @@ The script [`neural.py`](./benchmarks/neural.py) contains the complete benchmark
 > [!IMPORTANT]  
 > The FLOP counter for the deep neural network architecture is still under development, thus the only relevant performance indicator is **epoch time** (given a specific training configuration).
 
-Usage is straightforward. If the datasets are not already available on the system, one can use `FORCE_DOWNLOAD=1` environment variable when running the script:
+Usage is straightforward. If the datasets are not already available on the system, one can use `FORCE_DOWNLOAD=1` environment variable when running the script.
+1. Navigate to `benchmarks/` and run:
 ```bash
 FORCE_DOWNLOAD=1 python3 neural.py
 ```
+or (if your datasets are already available)
+```bash
+python3 neural.py
+```
 
 After execution, metrics can be checked inside the `./logs` directory.
+
+> [!CAUTION]
+> The dataset retriever expects a default path to keep all files. The most recommended path is `./data`. This will assure that everything is placed within the current working directory, but separated from the rest of implementation. Git is already configured to ignore everything in that path.
+
+```python
+dataset_helper = StandardDatasets("./data")
+```
+This is set by default via the config in [`datasets.py`](./benchmarks/datasets.py):
+```python
+@dataclass
+class DatasetConfig:
+    name: str
+    path: str | None
+    download: bool = False
+    resize_to: int = -1
+    force_3_channels: bool = False
+    data_dir: str = "./data"
+```

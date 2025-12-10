@@ -11,6 +11,7 @@
         "convolutional",
         "cpython",
         "CUDA",
+        "dataclass",
         "dotenv",
         "ffwd",
         "Goodfellow",
