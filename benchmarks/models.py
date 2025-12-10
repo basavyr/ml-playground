@@ -28,7 +28,7 @@ class Transformer(nn.Module):
 class LinearNet(nn.Module):
     def __init__(self, num_hidden_layers: int, input_size: int, hidden_dim: int, output_size: int):
         super(LinearNet, self).__init__()
-        assert num_hidden_layers > 1, "The neural network must have at least one hidden layers (num_hidden_layers > 1)"
+        assert num_hidden_layers > 0, "The neural network must have at least one hidden layer"
         self.output_size = output_size
         self.num_classes = output_size
         self.input_size = input_size
