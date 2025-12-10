@@ -194,3 +194,19 @@ def validate_tiny_imagenet_image_folder(image_folder_path: str) -> bool:
     if len(os.listdir(image_folder_path)) == num_classes and dir_size >= minimum_required_disk_size:
         return True
     return False
+
+
+def get_model_flops(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, device: torch.types.Device, with_backward: bool = True):
+    model.to(device)
+
+    x, _ = next(iter(train_loader))
+    x = x.to(device)
+    B, C, H, W = x.shape
+    print(f'B = {B} | C = {C} | H = {H} | W = {W} |')
+    flop_counter = FlopCounterMode(display=True)
+    with flop_counter:
+        model(x)
+        if with_backward:
+            model(x).sum().backward()
+
+    return flop_counter.get_total_flops()
