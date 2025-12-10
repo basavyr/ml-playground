@@ -19,7 +19,6 @@ from models import LinearNet
 
 @dataclass
 class TrainingConfigs:
-    model_type: str
     device: torch.types.Device
     batch_size: int
     loss_fn: nn.Module = torch.nn.CrossEntropyLoss()
@@ -77,10 +76,11 @@ def train_model(
 
 
 def run_model_workflow(
+    model_type: str,
     training_config: TrainingConfigs,
     dataset_config: DatasetConfig,
 ):
-    print(f'{"="*20} Training benchmark for {training_config.device} {"="*20}')
+    print(f'{"="*20} Training benchmark for {model_type} {"="*20}')
     # -------- dataset  --------
     dataset_helper = StandardDatasets(dataset_config.data_dir)
     dataset = dataset_helper.get_dataset(
@@ -94,16 +94,16 @@ def run_model_workflow(
         dataset, batch_size=training_config.batch_size, shuffle=False)
 
     # -------- model  --------
-    if training_config.model_type == "linear":
+    if model_type == "linear":
         model = LinearNet(num_hidden_layers=5,
                           input_size=dataset_helper.input_size,
                           hidden_dim=64,
                           output_size=dataset_helper.num_classes)
-    elif training_config.model_type == "resnet18":
+    elif model_type == "resnet18":
         model = resnet18(num_classes=dataset_helper.num_classes)
-    elif training_config.model_type == "resnet34":
+    elif model_type == "resnet34":
         model = resnet18(num_classes=dataset_helper.num_classes)
-    elif training_config.model_type == "resnet50":
+    elif model_type == "resnet50":
         model = resnet18(num_classes=dataset_helper.num_classes)
     else:
         raise ValueError("Unsupported model type")
@@ -118,8 +118,7 @@ def run_model_workflow(
 
 if __name__ == "__main__":
     # -------- configs --------
-    training_config = TrainingConfigs(model_type="resnet18",
-                                      device=get_optimal_device(),
+    training_config = TrainingConfigs(device=get_optimal_device(),
                                       batch_size=128,
                                       learning_rate=0.01)
     all_ds_configs = [DatasetConfig("tiny", "./data/tiny-imagenet-200", False,  -1, False),
@@ -127,5 +126,5 @@ if __name__ == "__main__":
                       DatasetConfig("cifar10", None, False, -1, False),
                       DatasetConfig("cifar100", None, False, -1, False),]
 
-    run_model_workflow(
-        training_config, all_ds_configs[1])
+    run_model_workflow("linear", training_config, all_ds_configs[1])
+    run_model_workflow("resnet50", training_config, all_ds_configs[0])
