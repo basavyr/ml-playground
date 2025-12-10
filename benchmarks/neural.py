@@ -17,6 +17,9 @@ from datasets import StandardDatasets, DatasetConfig
 from models import LinearNet
 
 
+FORCE_DOWNLOAD = os.getenv("FORCE_DOWNLOAD", "0")
+
+
 @dataclass
 class TrainingConfigs:
     device: torch.types.Device
@@ -125,6 +128,9 @@ if __name__ == "__main__":
                       DatasetConfig("mnist", None, False, -1, True),
                       DatasetConfig("cifar10", None, False, -1, False),
                       DatasetConfig("cifar100", None, False, -1, False),]
+    if FORCE_DOWNLOAD == "1":
+        for ds_conf in all_ds_configs:
+            ds_conf.download = True
 
     run_model_workflow("linear", training_config, all_ds_configs[1])
     run_model_workflow("resnet50", training_config, all_ds_configs[0])
