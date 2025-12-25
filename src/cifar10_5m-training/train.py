@@ -149,12 +149,15 @@ class Trainer:
             self.gpu_id = torch.device("cuda:0")
         self.model = model.to(self.gpu_id)
         self.optimizer = optimizer
+        self.loss_fn = train_conf.loss_fn
         self.train_conf = train_conf
         self.data_conf = data_conf
         if self.use_ddp:
             self.model = DDP(self.model, device_ids=[self.gpu_id])
 
     def train(self, train_loader: Any, max_epochs: int, checkpoint_path: str | None):
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=max_epochs, eta_min=1e-5)
         train_start = time.monotonic_ns()
         train_times = []
         if self.local_rank == 0:
@@ -172,23 +175,39 @@ class Trainer:
 
         for epoch in range(max_epochs):
             epoch_start = time.monotonic_ns()
-
+            epoch_tloss = 0.0
+            epoch_preds = 0
             for x, y_true in train_loader:
                 x, y_true = x.to(self.gpu_id), y_true.to(self.gpu_id)
+                self.optimizer.zero_grad()
+
                 y = self.model(x)
+                loss = self.loss_fn(y, y_true)
+                epoch_tloss += loss.item()*x.shape[0]
+                epoch_preds += (y.argmax(dim=1) == y_true).sum().item()
+
+                loss.backward()
+                self.optimizer.step()
+
                 pbar.update(x.shape[0])
+            scheduler.step()
             train_times.append((time.monotonic_ns()-epoch_start)/1e9)
+            epoch_tloss /= len(train_loader.dataset)
+            epoch_acc = epoch_preds/len(train_loader.dataset)*100
 
         pbar.close()
         train_time = round((time.monotonic_ns()-train_start)/1e9, 3)
         avg_epoch_time = round(sum(train_times)/len(train_times), 3)
+
         if self.use_ddp:
             dist.barrier()
             print(
                 f'[GPU{self.gpu_id}/{os.getenv("WORLD_SIZE")}] Total time: {train_time} s (avg. {avg_epoch_time} s per epoch)')
+            print(f'Final Loss/Acc: {epoch_tloss:.4f} / {epoch_acc:.2f} %')
         elif not self.use_ddp and self.local_rank == 0:
             print(
                 f'Total train time: {train_time} s (avg. {avg_epoch_time} s per epoch)')
+            print(f'Final Loss/Acc: {epoch_tloss:.4f} / {epoch_acc:.2f} %')
         # source how to save a model when using DPP
         # https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
         if checkpoint_path and self.local_rank == 0:
@@ -197,7 +216,7 @@ class Trainer:
     def _save_snapshot(self, epoch: int, path: str):
         if self.use_ddp:
             snapshot = {
-                "MODEL_STATE": self.model.module.state_dict(),
+                "MODEL_STATE": self.model.state_dict(),
                 "RUNS": epoch,
                 "DDP": self.use_ddp,
             }
@@ -264,9 +283,24 @@ def cifar5m_workflow(train_conf: TrainingConfigs, data_conf: DataConfigs, train_
         _state_dict = model_pth['MODEL_STATE']
         _state_runs = model_pth['RUNS']
         _state_ddp = model_pth['DDP']
-        model.load_state_dict(_state_dict)
+        # make sure the loaded state dict is compatible with the current DDP process
+        assert _state_ddp == train_conf.use_ddp, "Cannot load model in the current workflow. Inconsistent DDP between checkpoint and the environment."
+        if _state_ddp is False:
+            print(f'Loading non-DDP weights')
+            model.load_state_dict(_state_dict)
+        else:
+            # source: https://discuss.pytorch.org/t/failed-to-load-model-trained-by-ddp-for-inference/84841
+            print(f'Loading DDP weights')
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in _state_dict.items():
+                # remove 'module.' of DataParallel/DistributedDataParallel
+                name = k[7:]
+                new_state_dict[name] = v
+            model.load_state_dict(new_state_dict)
     if data_conf.num_classes != 10:
-        model.fc.out_features = data_conf.num_classes
+        _in_features = model.fc.in_features
+        model.fc = nn.Linear(_in_features, data_conf.num_classes)
     trainer = Trainer(train_conf=train_conf,
                       data_conf=data_conf,
                       model=model,
