@@ -73,3 +73,5 @@ benchmarks/__pycache__
 benchmarks/data/
 src/data
 src/cifar10_5m-training/.python-version
+src/cifar10_5m-training/*.png
+src/cifar10_5m-training/*.txt
