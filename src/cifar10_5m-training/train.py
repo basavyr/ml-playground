@@ -13,7 +13,7 @@ from torchvision import transforms
 import sys
 import os
 from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Callable, Any, Tuple, List
 from tqdm import tqdm, trange
 import argparse
 import time
@@ -155,16 +155,14 @@ class Trainer:
         if self.use_ddp:
             self.model = DDP(self.model, device_ids=[self.gpu_id])
 
-    def train(self, train_loader: Any, max_epochs: int, checkpoint_path: str | None):
+    def train(self, train_loader: Any, max_epochs: int, checkpoint_path: str | None) -> Tuple[List[float], List[float]]:
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=max_epochs, eta_min=1e-5)
         train_start = time.monotonic_ns()
         train_times = []
         if self.local_rank == 0:
             print(
-                f'Training model {train_conf.model_type} on device: {self.gpu_id}')
-            print(
-                f'Dataset: {self.data_conf.dataset_name} | Batch size: {self.train_conf.batch_size} | Checkpoint -> {checkpoint_path}')
+                f'Model: {train_conf.model_type} | Dataset: {self.data_conf.dataset_name} | Batch size: {self.train_conf.batch_size} | Checkpoint -> {checkpoint_path}')
 
         if self.use_ddp:
             _range = (len(train_loader.dataset) *
@@ -172,7 +170,8 @@ class Trainer:
             pbar = trange(0, _range, position=self.gpu_id)
         else:
             pbar = trange(0, len(train_loader.dataset)*max_epochs, position=0)
-
+        losses = []
+        accuracies = []
         for epoch in range(max_epochs):
             epoch_start = time.monotonic_ns()
             epoch_tloss = 0.0
@@ -194,6 +193,8 @@ class Trainer:
             train_times.append((time.monotonic_ns()-epoch_start)/1e9)
             epoch_tloss /= len(train_loader.dataset)
             epoch_acc = epoch_preds/len(train_loader.dataset)*100
+            losses.append(round(epoch_tloss, 4))
+            accuracies.append(round(epoch_acc, 2))
 
         pbar.close()
         train_time = round((time.monotonic_ns()-train_start)/1e9, 3)
@@ -203,11 +204,13 @@ class Trainer:
             dist.barrier()
             print(
                 f'[GPU{self.gpu_id}/{os.getenv("WORLD_SIZE")}] Total time: {train_time} s (avg. {avg_epoch_time} s per epoch)')
-            print(f'Final Loss/Acc: {epoch_tloss:.4f} / {epoch_acc:.2f} %')
+            print(f'Loss: {losses}')
+            print(f'Accuracy: {accuracies}')
         elif not self.use_ddp and self.local_rank == 0:
             print(
                 f'Total train time: {train_time} s (avg. {avg_epoch_time} s per epoch)')
-            print(f'Final Loss/Acc: {epoch_tloss:.4f} / {epoch_acc:.2f} %')
+            print(f'Loss: {losses}')
+            print(f'Accuracy: {accuracies}')
         # source how to save a model when using DPP
         # https://stackoverflow.com/questions/70386800/what-is-the-proper-way-to-checkpoint-during-training-when-using-distributed-data
         if checkpoint_path and self.local_rank == 0:
@@ -229,7 +232,7 @@ class Trainer:
         torch.save(snapshot, path)
 
 
-def cifar5m_workflow(train_conf: TrainingConfigs, data_conf: DataConfigs, train_cifar5m_first: bool = True, use_pretrained_weights: bool = True):
+def cifar5m_cifarX_workflow(train_conf: TrainingConfigs, dataset_name: str, train_cifar5m_first: bool = True, use_pretrained_weights: bool = True):
     if train_conf.use_ddp:
         ddp_setup()
         if dist.get_rank() == 0:
@@ -262,6 +265,11 @@ def cifar5m_workflow(train_conf: TrainingConfigs, data_conf: DataConfigs, train_
                       train_conf.num_train_epochs, checkpoint_path)
 
     # 2 ---- train/finetune the model on CIFARX
+    num_classes = 100 if dataset_name == "cifar100" else 10
+    data_conf = DataConfigs(dataset_name=dataset_name,
+                            img_size=32,
+                            in_channels=3,
+                            num_classes=num_classes)
     train_dataset = get_cifar_dataset(data_conf.dataset_name, train=True)
     if train_conf.use_ddp:
         train_loader = DataLoader(
@@ -312,6 +320,40 @@ def cifar5m_workflow(train_conf: TrainingConfigs, data_conf: DataConfigs, train_
         destroy_process_group()
 
 
+def train_cifar5m(train_conf: TrainingConfigs):
+    if train_conf.use_ddp:
+        ddp_setup()
+        if dist.get_rank() == 0:
+            print(f'Training with DPP: WS= {dist.get_world_size()}')
+
+    cifar5m_dataset = get_cifar_dataset("cifar5m", train=True)
+    checkpoint_path = f"models/_proto__{train_conf.model_type}-cifar5m_{train_conf.num_train_epochs}epochs.pth"
+
+    if train_conf.use_ddp:
+        cifar5m_loader = DataLoader(
+            cifar5m_dataset,
+            batch_size=train_conf.batch_size,
+            shuffle=False,
+            num_workers=4,
+            sampler=DistributedSampler(cifar5m_dataset))
+    else:
+        cifar5m_loader = DataLoader(
+            cifar5m_dataset,
+            batch_size=train_conf.batch_size,
+            shuffle=False,
+            num_workers=4)
+    model, optimizer = get_model_and_optimizer(train_conf.model_type, 10)
+    trainer = Trainer(train_conf=train_conf,
+                      data_conf=DataConfigs(
+                          dataset_name="cifar5m", img_size=32, in_channels=3, num_classes=10),
+                      model=model,
+                      optimizer=optimizer)
+    trainer.train(cifar5m_loader, train_conf.num_train_epochs, checkpoint_path)
+
+    if train_conf.use_ddp:
+        destroy_process_group()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Algorithm for training CIFAR10-5m and then perform finetuning on CIFAR10-5m/CIFAR10/CIFAR100")
@@ -319,12 +361,16 @@ if __name__ == "__main__":
                         help="The learning rate")
     parser.add_argument("--model", type=str, default="resnet18",
                         help="The model used for training and fine-tuning")
-    parser.add_argument("--dataset", type=str, required=True,
+    parser.add_argument("--dataset", type=str, default="cifar5m",
                         help="The dataset to be used for fine-tuning the pretrained model")
     parser.add_argument("--train_epochs", type=int, default=1,
                         help="Number of epochs for training and fine-tuning")
     parser.add_argument("--ft_epochs", type=int, default=1,
                         help="Number of epochs for training and fine-tuning")
+    parser.add_argument("--pt_weights", default=False, action="store_true",
+                        help="Use pretrained weights from CIFAR10-5m")
+    parser.add_argument("--train_first", default=False, action="store_true",
+                        help="Train the CIFAR10-5m model first")
     parser.add_argument("--ddp", default=False,
                         action="store_true", help="Use DDP")
     args = parser.parse_args()
@@ -341,14 +387,10 @@ if __name__ == "__main__":
                                  learning_rate=args.lr,
                                  use_ddp=args.ddp,
                                  loss_fn=nn.CrossEntropyLoss())
-    num_classes = 100 if args.dataset == "cifar100" else 10
-    data_conf = DataConfigs(dataset_name=args.dataset,
-                            img_size=32,
-                            in_channels=3,
-                            num_classes=num_classes)
 
     # OMP_NUM_THREADS=1 torchrun --nproc_per_node=2 train.py --model resnet18 --dataset cifar10 --train_epochs 3 --ft_epochs 5 --ddp
     torch.manual_seed(train_conf.default_seed)
     torch.cuda.manual_seed_all(train_conf.default_seed)
-    cifar5m_workflow(train_conf=train_conf, data_conf=data_conf,
-                     train_cifar5m_first=False, use_pretrained_weights=True)
+    # cifar5m_cifarX_workflow(train_conf=train_conf, dataset_name=args.dataset,
+    #                         train_cifar5m_first=args.train_first, use_pretrained_weights=args.pt_weights)
+    train_cifar5m(train_conf)
