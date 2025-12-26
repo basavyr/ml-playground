@@ -356,6 +356,42 @@ def train_cifar5m(train_conf: TrainingConfigs):
         destroy_process_group()
 
 
+def train_cifar(train_conf: TrainingConfigs, dataset_type: str):
+    if train_conf.use_ddp:
+        ddp_setup()
+        if dist.get_rank() == 0:
+            print(f'Training with DPP: WS= {dist.get_world_size()}')
+
+    cifar_dataset = get_cifar_dataset(dataset_type, train=True)
+    checkpoint_path = f"models/trained_{train_conf.model_type}-{dataset_type}_{train_conf.num_train_epochs}epochs.pth"
+
+    if train_conf.use_ddp:
+        train_loader = DataLoader(
+            cifar_dataset,
+            batch_size=train_conf.batch_size,
+            shuffle=False,
+            num_workers=4,
+            sampler=DistributedSampler(cifar_dataset))
+    else:
+        train_loader = DataLoader(
+            cifar_dataset,
+            batch_size=train_conf.batch_size,
+            shuffle=False,
+            num_workers=4)
+    num_classes = 100 if dataset_type == "cifar100" else 10
+    model, optimizer = get_model_and_optimizer(
+        train_conf.model_type, num_classes)
+    trainer = Trainer(train_conf=train_conf,
+                      data_conf=DataConfigs(
+                          dataset_name=dataset_type, img_size=32, in_channels=3, num_classes=num_classes),
+                      model=model,
+                      optimizer=optimizer)
+    trainer.train(train_loader, train_conf.num_train_epochs, checkpoint_path)
+
+    if train_conf.use_ddp:
+        destroy_process_group()
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="Algorithm for training CIFAR10-5m and then perform finetuning on CIFAR10-5m/CIFAR10/CIFAR100")
@@ -395,4 +431,4 @@ if __name__ == "__main__":
     torch.cuda.manual_seed_all(train_conf.default_seed)
     # cifar5m_cifarX_workflow(train_conf=train_conf, dataset_name=args.dataset,
     #                         train_cifar5m_first=args.train_first, use_pretrained_weights=args.pt_weights)
-    train_cifar5m(train_conf)
+    train_cifar(train_conf, args.dataset)
