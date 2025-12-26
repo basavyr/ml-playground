@@ -176,6 +176,7 @@ class Trainer:
             epoch_start = time.monotonic_ns()
             epoch_tloss = 0.0
             epoch_preds = 0
+            per_gpu_processed_samples = 0
             for x, y_true in train_loader:
                 x, y_true = x.to(self.gpu_id), y_true.to(self.gpu_id)
                 self.optimizer.zero_grad()
@@ -189,10 +190,11 @@ class Trainer:
                 self.optimizer.step()
 
                 pbar.update(x.shape[0])
+                per_gpu_processed_samples += x.shape[0]
             scheduler.step()
             train_times.append((time.monotonic_ns()-epoch_start)/1e9)
-            epoch_tloss /= len(train_loader.dataset)
-            epoch_acc = epoch_preds/len(train_loader.dataset)*100
+            epoch_tloss /= per_gpu_processed_samples
+            epoch_acc = epoch_preds/per_gpu_processed_samples*100
             losses.append(round(epoch_tloss, 4))
             accuracies.append(round(epoch_acc, 2))
 
@@ -232,7 +234,7 @@ class Trainer:
         torch.save(snapshot, path)
 
 
-def cifar5m_cifarX_workflow(train_conf: TrainingConfigs, dataset_name: str, train_cifar5m_first: bool = True, use_pretrained_weights: bool = True):
+def train_cifar5m_and_finetune_cifarx(train_conf: TrainingConfigs, dataset_name: str, train_cifar5m_first: bool = True, use_pretrained_weights: bool = True):
     if train_conf.use_ddp:
         ddp_setup()
         if dist.get_rank() == 0:
