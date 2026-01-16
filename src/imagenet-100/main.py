@@ -57,10 +57,13 @@ def convert_parquet_data_to_torch(root_dir, n_files: int, split: str):
 
 
 def main():
-    parquet_path = "/Users/svc_sps/Documents/Dev/imagenet-100/data"
+    # initial data taken from HF: https://huggingface.co/datasets/basavyr/imagenet-100
+    PARQUET_PATH = os.getenv("PARQUET_PATH", None)
+    assert PARQUET_PATH is not None, "Environment variable < PARQUET_PATH > is not set"
+
     os.makedirs("data", exist_ok=True)
-    convert_parquet_data_to_torch(parquet_path, 17, "train")
-    convert_parquet_data_to_torch(parquet_path, 1, "validation")
+    convert_parquet_data_to_torch(PARQUET_PATH, 17, "train")
+    convert_parquet_data_to_torch(PARQUET_PATH, 1, "validation")
 
 
 if __name__ == "__main__":
