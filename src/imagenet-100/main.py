@@ -165,7 +165,7 @@ def main():
 
     os.makedirs(PT_DATA_DIR, exist_ok=True)
 
-    train_dataset = Imagenet100(PT_DATA_DIR, train=True, max_files=1)
+    train_dataset = Imagenet100(PT_DATA_DIR, train=True, max_files=2)
     trainloader = DataLoader(train_dataset, batch_size=128, shuffle=True)
     print(f"Train dataset size: {len(train_dataset)}")
 
@@ -200,7 +200,7 @@ def main():
     duration = float((time.monotonic_ns() - start)/1e9)
     bandwidth = round(total_tensor_size_mb/duration, 4)
     print(f'Total bandwidth: {bandwidth} MBps')
-    print(train_loss)
+    print(f'Train Loss: {train_loss}')
 
 
 if __name__ == "__main__":
