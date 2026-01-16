@@ -75,3 +75,5 @@ src/data
 src/cifar10_5m-training/.python-version
 src/cifar10_5m-training/*.png
 src/cifar10_5m-training/*.txt
+src/imagenet-100/data
+src/imagenet-100/.python-version
