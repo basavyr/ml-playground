@@ -13,6 +13,9 @@ from typing import List
 import os
 
 
+PT_DATA_DIR = "data"
+
+
 def parquet_to_torch(parquet_file: pathlib.PurePath):
     data = pd.read_parquet(parquet_file)
     images = []
@@ -51,9 +54,21 @@ def convert_parquet_data_to_torch(root_dir, n_files: int, split: str):
         images, labels = parquet_to_torch(pq_file)
         pt_data = {"images": images, "labels": labels}
         pt_idx = f'{idx+1}' if idx+1 >= 10 else f'0{idx+1}'
-        data_file = f'data/imagenet100_{split}-{pt_idx}.pt'
+        data_file = f'{PT_DATA_DIR}/imagenet100_{split}-{pt_idx}.pt'
         torch.save(pt_data, data_file)
         print(f'{split} data {idx+1}/{n_files} -> {data_file}')
+
+
+def test_pt_data():
+    pt_files = os.listdir(PT_DATA_DIR)
+    for pt_file in pt_files:
+        data = torch.load(f'{PT_DATA_DIR}/{pt_file}')
+        assert data['images'] is not None, "Invalid data format for images"
+        assert data['labels'] is not None, "Invalid data format for labels"
+        assert data['images'][0].shape == (
+            3, 224, 224), "Invalid tensor shapes"
+        assert data['labels'][0].shape == (), "Invalid label shape"
+    print(f'All files were successfully loaded.')
 
 
 def main():
@@ -61,9 +76,11 @@ def main():
     PARQUET_PATH = os.getenv("PARQUET_PATH", None)
     assert PARQUET_PATH is not None, "Environment variable < PARQUET_PATH > is not set"
 
-    os.makedirs("data", exist_ok=True)
-    convert_parquet_data_to_torch(PARQUET_PATH, 17, "train")
-    convert_parquet_data_to_torch(PARQUET_PATH, 1, "validation")
+    os.makedirs(PT_DATA_DIR, exist_ok=True)
+
+    # convert_parquet_data_to_torch(PARQUET_PATH, 17, "train")
+    # convert_parquet_data_to_torch(PARQUET_PATH, 1, "validation")
+    test_pt_data()
 
 
 if __name__ == "__main__":
