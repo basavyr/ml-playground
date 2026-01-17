@@ -77,3 +77,6 @@ src/cifar10_5m-training/*.png
 src/cifar10_5m-training/*.txt
 src/imagenet-100/data
 src/imagenet-100/.python-version
+src/embedding-splitter/__pycache__
+src/embedding-splitter/.python-version
+src/embedding-splitter/models
