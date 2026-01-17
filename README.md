@@ -1,6 +1,10 @@
 # ML Playground 🚀
 
-A collection of tools used for learning Machine Learning and Deep Neural Network concepts
+A collection of tools used for learning Machine Learning and Deep Neural Network concepts.
+
+## January 2026 Update
+
+With the rise of agentic tools such as [Opencode](https://opencode.ai/), a few projects have been started and maintained using Opencode. The projects that are developed within an agentic style can be identified by the presence of the `AGENTS.md` files.
 
 ## November 2025 Update
 
