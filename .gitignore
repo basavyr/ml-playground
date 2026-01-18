@@ -84,3 +84,7 @@ src/embedding-splitter/models
 src/flexible-vit/__pycache__
 src/flexible-vit/.python-version
 src/flexible-vit/models
+# src/embedding-splitter/models
+src/embedding-splitter/models/__pycache__
+src/whisper-to-text/.python-version
+src/whisper-to-text/config.json
