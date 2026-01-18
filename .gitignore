@@ -79,4 +79,7 @@ src/imagenet-100/data
 src/imagenet-100/.python-version
 src/embedding-splitter/__pycache__
 src/embedding-splitter/.python-version
-src/embedding-splitter/models
+# src/embedding-splitter/models
+src/embedding-splitter/models/__pycache__
+src/whisper-to-text/.python-version
+src/whisper-to-text/config.json
