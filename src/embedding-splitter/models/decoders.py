@@ -2,50 +2,36 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPT2LMHeadModel, GPT2Tokenizer
 from typing import List
 
-DEFAULT_GPT = "gpt2"
-DEFAULT_PHI3 = 'microsoft/Phi-3-mini-4k-instruct'
-
 
 class DecoderManager:
-    def __init__(self, device: torch.device, force_gpt2=False):
+    def __init__(self, device: torch.device, model_names: List[str]):
         self.device = device
         self.models = []
-        self.model_names = []
-
-        # Initialize tokenizer as None first
+        self.model_names = model_names
         self.tokenizer = None
 
-        if force_gpt2:
-            model_configs: List[str] = [
-                DEFAULT_GPT,
-                DEFAULT_GPT,
-                DEFAULT_GPT]
-            model_class = GPT2LMHeadModel
-            tokenizer_class = GPT2Tokenizer
-        else:
-            model_configs: List[str] = [
-                DEFAULT_PHI3,
-                DEFAULT_PHI3,
-                DEFAULT_PHI3]
-            model_class = AutoModelForCausalLM
-            tokenizer_class = AutoTokenizer
+        for model_name in model_names:
+            try:
+                # Auto-detect model class and tokenizer
+                model = AutoModelForCausalLM.from_pretrained(model_name)
+                tokenizer = AutoTokenizer.from_pretrained(model_name)
+            except Exception as e:
+                try:
+                    # Fallback to GPT2 class
+                    model = GPT2LMHeadModel.from_pretrained(model_name)
+                    tokenizer = GPT2Tokenizer.from_pretrained(model_name)
+                except Exception as e:
+                    print(f"Error loading model {model_name}: {e}")
+                    raise
 
-        model_desc = f"Models: 3× {model_configs[0]}"
-        for model_name in model_configs:
-            model = model_class.from_pretrained(model_name)
             model.to(device)
             self.models.append(model)
-            # Extract model name from path
-            self.model_names.append(model_name.split('/')[-1])
 
-            # Use tokenizer from first model
+            # Use tokenizer from first model for all models
             if self.tokenizer is None:
-                self.tokenizer = tokenizer_class.from_pretrained(model_name)
+                self.tokenizer = tokenizer
 
         self.tokenizer.pad_token = self.tokenizer.eos_token
-
-        # Update model description for output
-        self.model_desc = model_desc
 
     def decode_embedding(self, embedding: torch.Tensor, model_idx: int = 0) -> str:
         model = self.models[model_idx]

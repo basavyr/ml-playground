@@ -8,11 +8,11 @@ from transformers import AutoModel, AutoTokenizer
 
 
 class EmbeddingManager:
-    def __init__(self, device: torch.device):
+    def __init__(self, device: torch.device, embedding_model_name: str):
         self.device = device
         
         # Primary embedder - nomic-embed-text-v1.5 (768d)
-        self.primary_model = SentenceTransformer('nomic-ai/nomic-embed-text-v1.5', device=str(device), trust_remote_code=True)
+        self.primary_model = SentenceTransformer(embedding_model_name, device=str(device), trust_remote_code=True)
         
         # No longer using sub-models - using same primary model for all sub-embeddings
         self.sub_tokenizer = self.primary_model.tokenizer

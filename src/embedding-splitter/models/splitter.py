@@ -5,11 +5,11 @@ from models.decoders import DecoderManager
 
 
 class EmbeddingSplitter:
-    def __init__(self, device: torch.device, complexity_threshold: int = 50, force_gpt2: bool = False):
+    def __init__(self, device: torch.device, complexity_threshold: int = 50, embedding_model: str = "nomic-ai/nomic-embed-text-v1.5", decoder_models: List[str] = None):
         self.device = device
         self.complexity_threshold = complexity_threshold
-        self.embedder = EmbeddingManager(device)
-        self.decoder = DecoderManager(device, force_gpt2=force_gpt2)
+        self.embedder = EmbeddingManager(device, embedding_model)
+        self.decoder = DecoderManager(device, decoder_models)
         
     def process(self, prompt: str) -> Dict[str, Any]:
         # Step 1: Generate initial embedding E
