@@ -46,19 +46,34 @@ def format_results(results: Dict[str, Any], duration: float, bandwidth: float) -
     print(f"Prompt: \"{results['prompt']}\"")
     print(f"Tokens: {results['token_count']} | Splitting: {'Yes' if results.get('should_split', False) else 'No'}")
     
-    print(f"\n--- SUB-EMBEDDING SIMILARITY ---")
-    sub_names = ["E1", "E2", "E3"]
-    for i, (emb, name) in enumerate(zip(results['sub_embeddings'], sub_names)):
-        format_tensor_with_similarity(emb, results['initial_embedding'], name)
+    no_split = results.get('no_split', False)
+    
+    if not no_split:
+        print(f"\n--- SUB-EMBEDDING SIMILARITY ---")
+        sub_names = ["E1", "E2", "E3"]
+        sub_embeddings = results.get('sub_embeddings', [])
+        for i, (emb, name) in enumerate(zip(sub_embeddings, sub_names)):
+            format_tensor_with_similarity(emb, results['initial_embedding'], name)
     
     print(f"\n--- GENERATED RESPONSES ---")
-    model_names = results.get('model_names', ['Unknown #1', 'Unknown #2', 'Unknown #3'])
-    for i, (output, model_name) in enumerate(zip(results['outputs'], model_names)):
-        print(f"Y{i+1} ({model_name}): \"{output}\"")
+    model_names = results.get('model_names', ['Unknown'])
+    outputs = results.get('outputs', [])
+    
+    if no_split:
+        print(f"Y ({model_names[0]}): \"{outputs[0]}\"")
+    else:
+        for i, (output, model_name) in enumerate(zip(outputs, model_names)):
+            print(f"Y{i+1} ({model_name}): \"{output}\"")
     
     print(f"\n--- PERFORMANCE ---")
     print(f"Time: {duration:.2f}s | Bandwidth: {bandwidth:.2f}MB/s")
     
-    total_memory = sum(emb.numel() * emb.element_size() for emb in results['sub_embeddings'])
+    if no_split:
+        emb = results['initial_embedding']
+        total_memory = emb.numel() * emb.element_size()
+    else:
+        sub_embeddings = results.get('sub_embeddings', [])
+        total_memory = sum(emb.numel() * emb.element_size() for emb in sub_embeddings)
+        
     total_memory_mb = total_memory / (1024**2)
     print(f"Memory: {total_memory_mb:.2f}MB")

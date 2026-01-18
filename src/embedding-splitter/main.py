@@ -20,10 +20,14 @@ def main():
                        help='Token count threshold for complexity-based splitting')
     parser.add_argument('--forcegpt2', action='store_true',
                        help='Force use of 3 GPT2-large instances instead of modern models')
+    parser.add_argument('--no-split', action='store_true',
+                       help='Process the entire prompt without splitting')
     args = parser.parse_args()
     
     # Determine decoder models based on flag
-    if args.forcegpt2:
+    if args.no_split:
+        decoder_models = [GPT2_MODEL] if args.forcegpt2 else [PHI3_MODEL]
+    elif args.forcegpt2:
         decoder_models = [GPT2_MODEL, GPT2_MODEL, GPT2_MODEL]
     else:
         decoder_models = [PHI3_MODEL, PHI3_MODEL, PHI3_MODEL]
@@ -34,19 +38,28 @@ def main():
     # Print configuration
     print(f"=== CONFIGURATION ===")
     print(f"Device: {device}")
-    print(f"Embedding Dimension: {splitter.embedder.primary_model.get_sentence_embedding_dimension()}")
-    print(f"Complexity Threshold: {args.threshold} tokens")
-    print(f"Embedding Model: {EMBEDDING_MODEL}")
+    
+    if not args.no_split:
+        print(f"Embedding Dimension: {splitter.embedder.primary_model.get_sentence_embedding_dimension()}")
+        print(f"Complexity Threshold: {args.threshold} tokens")
+        print(f"Embedding Model: {EMBEDDING_MODEL}")
+    
     # Get unique model name for display
     unique_model = splitter.decoder.model_names[0] if splitter.decoder.model_names else "unknown"
-    print(f"Decoder Models: 3× {unique_model}")
+    model_count = len(splitter.decoder.model_names)
+    print(f"Decoder Models: {model_count}× {unique_model}")
     print()
     
     # Process with performance tracking
-    results, duration = measure_performance(splitter.process, args.prompt)
+    process_func = splitter.process_no_split if args.no_split else splitter.process
+    results, duration = measure_performance(process_func, args.prompt)
     
     # Calculate bandwidth using the embeddings
-    all_tensors = [results['initial_embedding']] + list(results['sub_embeddings'])
+    if args.no_split:
+        all_tensors = [results['initial_embedding']]
+    else:
+        all_tensors = [results['initial_embedding']] + list(results['sub_embeddings'])
+        
     bandwidth = calculate_bandwidth(all_tensors, duration)
     
     # Display results

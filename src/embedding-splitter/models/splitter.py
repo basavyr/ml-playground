@@ -39,6 +39,26 @@ class EmbeddingSplitter:
             'model_names': self.decoder.model_names
         }
     
+    def process_no_split(self, prompt: str) -> Dict[str, Any]:
+        # Step 1: Generate initial embedding E
+        initial_embedding = self.embedder.encode_primary(prompt)
+        
+        # Step 2: Assess complexity (for reporting)
+        token_count = self._get_token_count(prompt)
+        
+        # Step 3: Decode the entire embedding without splitting
+        outputs = self.decoder.decode_all([initial_embedding])
+        
+        return {
+            'prompt': prompt,
+            'initial_embedding': initial_embedding,
+            'outputs': outputs,
+            'token_count': token_count,
+            'should_split': False,
+            'model_names': self.decoder.model_names,
+            'no_split': True
+        }
+    
     def _get_token_count(self, text: str) -> int:
         """Get token count for complexity assessment."""
         tokens = self.embedder.primary_model.tokenizer(text, truncation=True)
