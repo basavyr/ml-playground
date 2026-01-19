@@ -80,3 +80,6 @@ src/imagenet-100/.python-version
 src/embedding-splitter/__pycache__
 src/embedding-splitter/.python-version
 src/embedding-splitter/models
+
+src/flexible-vit/__pycache__
+src/flexible-vit/.python-version

@@ -8,7 +8,7 @@ from torch import nn as nn
 import torch.nn.functional as F
 
 # local imports
-from utils import get_optimal_device
+from utils import get_optimal_device, set_deterministic_behavior
 from models import VisionTransformer
 
 
@@ -21,6 +21,7 @@ class TrainingConfig:
     device: torch.types.Device
     batch_size: int
     epochs: int
+    seed: int | None = None
 
 
 def train_vit(training_config: TrainingConfig):
@@ -37,7 +38,7 @@ def train_vit(training_config: TrainingConfig):
     x = x.to(training_config.device)
     y_true = y_true.to(training_config.device)
     y = vit(x)
-    print(x.shape, y.shape, y.device)
+    print(x.shape, y.shape, y.device, y)
 
 
 def main():
@@ -45,7 +46,9 @@ def main():
     training_config = TrainingConfig(
         device=device,
         batch_size=128,
-        epochs=1)
+        epochs=1,
+        seed=1137)
+    set_deterministic_behavior(training_config.seed)
     train_vit(training_config=training_config)
 
 
