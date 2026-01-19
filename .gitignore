@@ -88,3 +88,14 @@ src/flexible-vit/models
 src/embedding-splitter/models/__pycache__
 src/whisper-to-text/.python-version
 src/whisper-to-text/config.json
+src/embedding-splitter/models/__pycache__
+src/whisper-to-text/.python-version
+src/whisper-to-text/config.json
+*.out
+*.fls
+*.log
+*.aux
+*.fdb_latexmk
+*.synctex.gz
+src/embedding-splitter/idea.tex
+src/embedding-splitter/idea.pdf

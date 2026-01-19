@@ -23,6 +23,7 @@
 ### Python Environment
 - **Dependencies**: `pip install torch torchvision pandas pillow tqdm`
 - **Main script**: `python main.py`
+- **No-split baseline**: `python main.py --no-split` for processing without embedding splitting
 - **Testing**: `pytest tests/` (when implemented)
 
 ### Code Quality
