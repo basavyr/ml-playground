@@ -1,15 +1,15 @@
 import os
 import sys
 from dataclasses import dataclass
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 import torch
 from torch import nn as nn
 from torch.utils.data import DataLoader
 # local imports
-from models import VisionTransformer
+from models import VisionTransformer, get_vit_patch_size
 from utils import get_optimal_device, set_deterministic_behavior
-from random_datasets import get_dataloader, DataConfig
+from random_datasets import get_dataloader_and_config, DataConfig
 
 DEFAULT_DATA_DIR: str = str(os.getenv("DEFAULT_DATA_DIR", None))
 assert DEFAULT_DATA_DIR is not None, "Environment variable < DEFAULT_DATA_DIR > is not set."
@@ -24,11 +24,8 @@ class TrainingConfig:
     seed: int | None = None
 
 
-def train_vit(training_config: TrainingConfig, data_config: DataConfig, trainloader: DataLoader):
-    vit = VisionTransformer(img_size=data_config.img_size,
-                            patch_size=4,
-                            in_channels=data_config.in_channels,
-                            num_classes=data_config.num_classes)
+def train_vit(vit_model: nn.Module, patch_size: int, training_config: TrainingConfig, data_config: DataConfig, trainloader: DataLoader):
+    vit = vit_model
     vit.to(training_config.device)
     vit.train()
 
@@ -38,9 +35,12 @@ def train_vit(training_config: TrainingConfig, data_config: DataConfig, trainloa
         optimizer, T_max=training_config.epochs, eta_min=1e-5)
     loss_fn = torch.nn.CrossEntropyLoss()
 
-    for epoch in range(training_config.epochs):
+    pbar = tqdm(total=training_config.epochs *
+                data_config.num_samples, dynamic_ncols=True)
+    for _ in range(training_config.epochs):
+        num_samples = 0
         epoch_loss = 0.0
-        for x, y_true in tqdm(trainloader, desc=f'Epoch {epoch+1}: training dataset'):
+        for x, y_true in trainloader:
             x, y_true = x.to(training_config.device), y_true.to(
                 training_config.device)
             optimizer.zero_grad()
@@ -48,14 +48,25 @@ def train_vit(training_config: TrainingConfig, data_config: DataConfig, trainloa
             y = vit(x)
             loss = loss_fn(y, y_true)
             epoch_loss += loss.item()*x.shape[0]
+            num_samples += x.shape[0]
 
             loss.backward()
             optimizer.step()
+            pbar.update(x.shape[0])
 
-        epoch_loss /= len(trainloader.dataset)
-
-        print(f'Epoch loss: {epoch_loss}')
+        epoch_loss = epoch_loss/num_samples
         scheduler.step()
+
+    pbar.close()
+    os.makedirs("./models", exist_ok=True)
+    model_pth = f'vit-img{data_config.img_size}-p{patch_size}_{training_config.epochs}epochs.pt'
+    model = {
+        "state_dict": vit.state_dict(),
+        "training_config": training_config,
+        "data_config": data_config,
+    }
+    torch.save(model, f'models/{model_pth}')
+    print(f'Checkpoint -> {model_pth}')
 
 
 def main():
@@ -66,18 +77,21 @@ def main():
         epochs=2,
         seed=1137)
     set_deterministic_behavior(training_config.seed)
-    data_config = DataConfig(num_samples=1000,
-                             img_size=32,
-                             in_channels=3,
-                             num_classes=10,
-                             train=True)
-    trainloader = get_dataloader(num_samples=data_config.num_samples,
-                                 batch_size=training_config.batch_size,
-                                 img_size=data_config.img_size,
-                                 in_channels=data_config.in_channels,
-                                 num_classes=data_config.num_classes,
-                                 train=data_config.train)
-    train_vit(training_config, data_config, trainloader)
+
+    dataset_type = "mnist"
+    trainloader, data_config = get_dataloader_and_config(
+        dataset_type=dataset_type,
+        num_samples=1000,
+        batch_size=128,
+        train=True)
+
+    patch_size = get_vit_patch_size(data_config.img_size)
+    vit = VisionTransformer(img_size=data_config.img_size,
+                            patch_size=patch_size,
+                            in_channels=data_config.in_channels,
+                            num_classes=data_config.num_classes,
+                            dynamic_img_size=True)
+    train_vit(vit, patch_size, training_config, data_config, trainloader)
 
 
 if __name__ == "__main__":
