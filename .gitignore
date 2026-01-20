@@ -83,3 +83,4 @@ src/embedding-splitter/models
 
 src/flexible-vit/__pycache__
 src/flexible-vit/.python-version
+src/flexible-vit/models
