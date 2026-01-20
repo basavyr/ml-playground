@@ -122,6 +122,7 @@ def finetune_vit(model_checkpoint: str, finetuning_config: TrainingConfig, check
         "state_dict": model.state_dict(),
         "training_config": finetuning_config,
         "data_config": finetuning_data_config,
+        "checkpoint_data_config": checkpoint_data_config
     }
     torch.save(model, f'models/{model_pth}')
     print(f'Final loss: {epoch_loss} | Finetuning checkpoint -> {model_pth}')
