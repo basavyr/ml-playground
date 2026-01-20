@@ -7,7 +7,7 @@ import torch
 from torch import nn as nn
 from torch.utils.data import DataLoader
 # local imports
-from models import VisionTransformer, get_vit_patch_size
+from models import VisionTransformer, get_patch_size_vit
 from utils import get_optimal_device, set_deterministic_behavior
 from random_datasets import get_dataloader_and_config, DataConfig
 
@@ -36,7 +36,8 @@ def train_vit(vit_model: nn.Module, patch_size: int, training_config: TrainingCo
     loss_fn = torch.nn.CrossEntropyLoss()
 
     pbar = tqdm(total=training_config.epochs *
-                data_config.num_samples, dynamic_ncols=True)
+                data_config.num_samples, desc=f'Training ViT on {data_config.dataset_type}', dynamic_ncols=True)
+    epoch_loss = None
     for _ in range(training_config.epochs):
         num_samples = 0
         epoch_loss = 0.0
@@ -66,7 +67,11 @@ def train_vit(vit_model: nn.Module, patch_size: int, training_config: TrainingCo
         "data_config": data_config,
     }
     torch.save(model, f'models/{model_pth}')
-    print(f'Checkpoint -> {model_pth}')
+    print(f'Final loss: {epoch_loss} | Checkpoint -> {model_pth}')
+
+
+def finetune_vit(model_checkpoint: str, finetuning_config: TrainingConfig, checkpoint_data_config: DataConfig, new_data_config: DataConfig):
+    raise NotADirectoryError("TBD")
 
 
 def main():
@@ -74,7 +79,7 @@ def main():
     training_config = TrainingConfig(
         device=device,
         batch_size=128,
-        epochs=2,
+        epochs=1,
         seed=1137)
     set_deterministic_behavior(training_config.seed)
 
@@ -85,7 +90,7 @@ def main():
         batch_size=128,
         train=True)
 
-    patch_size = get_vit_patch_size(data_config.img_size)
+    patch_size = get_patch_size_vit(data_config.img_size)
     vit = VisionTransformer(img_size=data_config.img_size,
                             patch_size=patch_size,
                             in_channels=data_config.in_channels,
