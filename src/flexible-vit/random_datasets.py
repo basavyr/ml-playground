@@ -38,28 +38,28 @@ class ClassificationData(Dataset):
 def get_dataloader_and_config(dataset_type: str, num_samples: int, batch_size: int, train: bool = True) -> Tuple[DataLoader, DataConfig]:
     if dataset_type == "mnist":
         data_config = DataConfig(dataset_type=dataset_type,
-                                 num_samples=1000,
+                                 num_samples=num_samples,
                                  img_size=28,
                                  in_channels=3,
                                  num_classes=10,
                                  train=True)
-    if dataset_type == "cifar10":
+    elif dataset_type == "cifar10":
         data_config = DataConfig(dataset_type=dataset_type,
-                                 num_samples=1000,
+                                 num_samples=num_samples,
                                  img_size=32,
                                  in_channels=3,
                                  num_classes=10,
                                  train=True)
     elif dataset_type == "tiny" or dataset_type == "tiny-imagenet-200":
         data_config = DataConfig(dataset_type=dataset_type,
-                                 num_samples=1000,
+                                 num_samples=num_samples,
                                  img_size=64,
                                  in_channels=3,
                                  num_classes=200,
                                  train=True)
     elif dataset_type == "cifar100":
         data_config = DataConfig(dataset_type=dataset_type,
-                                 num_samples=1000,
+                                 num_samples=num_samples,
                                  img_size=32,
                                  in_channels=3,
                                  num_classes=100,
