@@ -458,11 +458,6 @@ class VisionTransformer(nn.Module):
         if self.fix_init:
             self.fix_init_weight()
 
-    def _init_weights(self, m: nn.Module) -> None:
-        """Initialize weights for a single module (compatibility method)."""
-        # this fn left here for compat with downstream users
-        init_weights_vit_timm(m)
-
     def reset_classifier(self, num_classes: int, global_pool: Optional[str] = None) -> None:
         """Reset the classifier head.
 
@@ -651,3 +646,11 @@ def resample_abs_pos_embed(
     print(f'[INFO]: Resized position embedding: {old_size} to {new_size}.')
 
     return posemb
+
+
+def get_vit_patch_size(img_size: int) -> int:
+    if img_size >= 32:
+        patch_size = 8
+    else:
+        patch_size = 4
+    return patch_size
