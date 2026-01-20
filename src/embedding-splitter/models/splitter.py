@@ -10,25 +10,26 @@ class EmbeddingSplitter:
         self.complexity_threshold = complexity_threshold
         self.embedder = EmbeddingManager(device, embedding_model)
         self.decoder = DecoderManager(device, decoder_models)
-        
+
     def process(self, prompt: str) -> Dict[str, Any]:
         # Step 1: Generate initial embedding E
         initial_embedding = self.embedder.encode_primary(prompt)
-        
+
         # Step 2: Assess complexity and decide whether to split
         token_count = self._get_token_count(prompt)
         should_split = self._assess_complexity(token_count)
-        
+
         if should_split:
             # Step 3: Create 3 sub-embeddings E1, E2, E3 using semantic chunking
-            sub_embeddings = self.embedder.create_sub_embeddings(initial_embedding, prompt)
+            sub_embeddings = self.embedder.create_sub_embeddings(
+                initial_embedding, prompt)
         else:
             # Use the original embedding split into 3 parts
             sub_embeddings = self._split_embedding_simple(initial_embedding)
-        
+
         # Step 4: Decode each sub-embedding with different GPT-2 models
         outputs = self.decoder.decode_all(list(sub_embeddings))
-        
+
         return {
             'prompt': prompt,
             'initial_embedding': initial_embedding,
@@ -38,17 +39,17 @@ class EmbeddingSplitter:
             'should_split': should_split,
             'model_names': self.decoder.model_names
         }
-    
+
     def process_no_split(self, prompt: str) -> Dict[str, Any]:
         # Step 1: Generate initial embedding E
         initial_embedding = self.embedder.encode_primary(prompt)
-        
+
         # Step 2: Assess complexity (for reporting)
         token_count = self._get_token_count(prompt)
-        
+
         # Step 3: Decode the entire embedding without splitting
         outputs = self.decoder.decode_all([initial_embedding])
-        
+
         return {
             'prompt': prompt,
             'initial_embedding': initial_embedding,
@@ -58,16 +59,16 @@ class EmbeddingSplitter:
             'model_names': self.decoder.model_names,
             'no_split': True
         }
-    
+
     def _get_token_count(self, text: str) -> int:
         """Get token count for complexity assessment."""
         tokens = self.embedder.primary_model.tokenizer(text, truncation=True)
         return len(tokens['input_ids'])
-    
+
     def _assess_complexity(self, token_count: int) -> bool:
         """Assess if embedding is complex enough to warrant splitting."""
         return token_count > self.complexity_threshold
-    
+
     def _split_embedding_simple(self, embedding: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Simple splitting when complexity is low - split embedding into thirds."""
         if embedding.dim() == 1:
@@ -79,20 +80,25 @@ class EmbeddingSplitter:
             # For higher dimensional embeddings, split along first dimension
             third = embedding.size(0) // 3
             e1 = embedding[:third] if third > 0 else embedding[:1]
-            e2 = embedding[third:2*third] if 2*third <= embedding.size(0) else embedding[third:third+1]
-            e3 = embedding[2*third:] if 2*third < embedding.size(0) else embedding[-1:]
-            
+            e2 = embedding[third:2*third] if 2 * \
+                third <= embedding.size(0) else embedding[third:third+1]
+            e3 = embedding[2*third:] if 2 * \
+                third < embedding.size(0) else embedding[-1:]
+
             # Ensure all have same dimension by padding/interpolation
             target_size = embedding.size(0)
             if e1.size(0) != target_size:
-                e1 = torch.nn.functional.interpolate(e1.unsqueeze(0).unsqueeze(0), size=target_size, mode='linear').squeeze()
+                e1 = torch.nn.functional.interpolate(e1.unsqueeze(
+                    0).unsqueeze(0), size=target_size, mode='linear').squeeze()
             if e2.size(0) != target_size:
-                e2 = torch.nn.functional.interpolate(e2.unsqueeze(0).unsqueeze(0), size=target_size, mode='linear').squeeze()
+                e2 = torch.nn.functional.interpolate(e2.unsqueeze(
+                    0).unsqueeze(0), size=target_size, mode='linear').squeeze()
             if e3.size(0) != target_size:
-                e3 = torch.nn.functional.interpolate(e3.unsqueeze(0).unsqueeze(0), size=target_size, mode='linear').squeeze()
-        
+                e3 = torch.nn.functional.interpolate(e3.unsqueeze(
+                    0).unsqueeze(0), size=target_size, mode='linear').squeeze()
+
         return e1, e2, e3
-    
+
     def get_embedding_info(self, embeddings: List[torch.Tensor]) -> List[str]:
         info = []
         for i, emb in enumerate(embeddings, 1):
