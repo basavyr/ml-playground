@@ -64,6 +64,13 @@ def get_dataloader_and_config(dataset_type: str, num_samples: int, batch_size: i
                                  in_channels=3,
                                  num_classes=100,
                                  train=True)
+    elif dataset_type == "imagenet-100":
+        data_config = DataConfig(dataset_type=dataset_type,
+                                 num_samples=num_samples,
+                                 img_size=224,
+                                 in_channels=3,
+                                 num_classes=100,
+                                 train=True)
     else:
         raise ValueError(f"Incorrect dataset type: {dataset_type}")
 
