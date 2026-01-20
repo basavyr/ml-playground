@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from typing import Final, Union, Tuple, Literal, Optional, Type, List, Dict, Callable
+from typing import Final, Union, Tuple, Literal, Optional, Type, List, Callable
 from functools import partial
 import math
 
@@ -222,11 +222,19 @@ def get_init_weights_vit(mode: str = 'jax', head_bias: float = 0.0, needs_reset:
     return partial(init_weights_vit_timm, needs_reset=needs_reset)
 
 
-class VisionTransformer(nn.Module):
-    """ Vision Transformer
+def get_patch_size_vit(img_size: int) -> int:
+    if img_size >= 224:
+        patch_size = 16  # compatible with imagenet
+    elif img_size > 32:
+        patch_size = 8  # compatible with tiny-imagenet
+    else:
+        patch_size = 4  # compatible with cifar
+    return patch_size
 
-    A PyTorch impl of : `An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale`
-        - https://arxiv.org/abs/2010.11929
+
+class VisionTransformer(nn.Module):
+    """Mostly copy-paste from timm's Vision Transformer
+    Source: https://github.com/huggingface/pytorch-image-models/blob/main/timm/models/vision_transformer.py#L709
     """
     dynamic_img_size: Final[bool]
 
@@ -306,7 +314,10 @@ class VisionTransformer(nn.Module):
             embed_norm_layer: Normalization layer to use / override in patch embed module.
             norm_layer: Normalization layer.
             act_layer: MLP activation layer.
-            block_fn: Transformer block layer.
+            pool_include_prefix: Include prefix tokens (class, reg) in the pooling operation.
+            dynamic_img_size: Enable support for dynamic input image sizes. If True, positional embeddings 
+                are interpolated on-the-fly to match the input resolution.
+            dynamic_img_pad: Enable dynamic padding for input images that are not divisible by patch size.
         """
         super().__init__()
         dd = {'device': device, 'dtype': dtype}
@@ -646,11 +657,3 @@ def resample_abs_pos_embed(
     print(f'[INFO]: Resized position embedding: {old_size} to {new_size}.')
 
     return posemb
-
-
-def get_vit_patch_size(img_size: int) -> int:
-    if img_size >= 32:
-        patch_size = 8
-    else:
-        patch_size = 4
-    return patch_size
