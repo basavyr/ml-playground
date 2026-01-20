@@ -80,3 +80,9 @@ src/flexible-vit/__pycache__
 src/flexible-vit/.python-version
 src/flexible-vit/models
 
+*.out
+*.fls
+*.log
+*.aux
+*.fdb_latexmk
+*.synctex.gz
