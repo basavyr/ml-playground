@@ -152,15 +152,15 @@ class ImageNetParquetDataset(Dataset):
     def __init__(
         self,
         data_dir: str,
-        split: Literal["train", "val"] = "train",
+        split: Literal["train", "valildation"] = "train",
         transform: Optional[Callable] = None,
         image_size: int = 224,
         cache_shards: int = 2,
     ) -> None:
         super().__init__()
 
-        if split not in ("train", "val"):
-            raise ValueError(f"split must be 'train' or 'val', got '{split}'")
+        if split not in ("train", "validation"):
+            raise ValueError(f"split must be 'train' or 'validation', got '{split}'")
 
         self.data_dir = os.path.abspath(data_dir)
         self.split = split
@@ -371,7 +371,7 @@ def create_imagenet_dataloaders(
     )
     val_ds = ImageNetParquetDataset(
         data_dir=data_dir,
-        split="val",
+        split="validation",
         image_size=image_size,
         cache_shards=cache_shards,
     )
@@ -409,17 +409,18 @@ def main() -> None:
         description="Sanity-check the ImageNet parquet dataset loader."
     )
     parser.add_argument(
-        "data_dir",
+        "--data-dir",
         type=str,
+        required=True,
         help="Path to the directory containing parquet shards "
         "(e.g. ./imagenet-1k/data).",
     )
     parser.add_argument(
         "--split",
         type=str,
-        default="val",
-        choices=["train", "val"],
-        help="Which split to test (default: val).",
+        default="validation",
+        choices=["train", "validation"],
+        help="Which split to test (default: validation).",
     )
     parser.add_argument(
         "--batch-size",
