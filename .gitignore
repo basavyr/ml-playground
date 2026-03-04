@@ -86,7 +86,8 @@ src/flexible-vit/models
 *.aux
 *.fdb_latexmk
 *.synctex.gz
+
+src/cifar10_5m-training/__pycache__
 hugging_face/imagenet-full/__pycache__
 hugging_face/imagenet-full/.python-version
 
-src/cifar10_5m-training/__pycache__
