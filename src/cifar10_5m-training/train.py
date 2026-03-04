@@ -18,10 +18,13 @@ from tqdm import tqdm, trange
 import argparse
 import time
 
+# local import
+from cifar5m import Cifar5m
+
 DEFAULT_DATA_DIR = os.getenv("DEFAULT_DATA_DIR", None)
-CIFAR10_5M_PATH = os.getenv("CIFAR10_5M_PATH", None)
+CIFAR_5M_FULL_PATH = os.getenv("CIFAR_5M_FULL_PATH", None)
 assert DEFAULT_DATA_DIR is not None, "Environment variable < DEFAULT_DATA_DIR > not set."
-assert CIFAR10_5M_PATH is not None, "Environment variable < CIFAR10_5M_PATH > not set."
+assert CIFAR_5M_FULL_PATH is not None, "Environment variable < CIFAR_5M_FULL_PATH > not set."
 
 
 @dataclass
@@ -42,44 +45,6 @@ class DataConfigs:
     img_size: int
     in_channels: int
     num_classes: int
-
-
-class CIFAR5m(Dataset):
-    def __init__(self, root_dir: str, transform: transforms.Compose | None, train: bool):
-        import numpy as np
-        self.root_dir = root_dir
-        self.train = train
-        self.transform = transform
-        self.npz_files = [
-            f'{root_dir}/cifar5m_part0.npz',
-            f'{root_dir}/cifar5m_part1.npz',
-            f'{root_dir}/cifar5m_part2.npz',
-            f'{root_dir}/cifar5m_part3.npz',
-            f'{root_dir}/cifar5m_part4.npz',
-            f'{root_dir}/cifar5m_part5.npz']
-        self.x = []
-        self.y_true = []
-
-        for npz_file in self.npz_files[:1]:
-            npz_data = np.load(npz_file)
-            self.x.append(npz_data['X'])
-            self.y_true.extend(npz_data['Y'])
-        self.x = np.vstack(self.x).reshape(-1, 3, 32, 32)
-        self.x = self.x.transpose((0, 2, 3, 1))  # convert to HWC
-
-    def __getitem__(self, idx: int):
-        x = self.x[idx]
-        y_true = self.y_true[idx]
-
-        if self.transform:
-            x = self.transform(x)
-        else:
-            x = torch.from_numpy(x).float()
-        y_true_torch = torch.tensor(y_true, dtype=torch.long)
-        return x, y_true_torch
-
-    def __len__(self):
-        return len(self.x)
 
 
 def ddp_setup(force_one_gpu: bool = False):
@@ -130,9 +95,11 @@ def get_cifar_dataset(dataset_type: str, train: bool = True):
         dataset = CIFAR100(DEFAULT_DATA_DIR, train=train,
                            transform=tf, download=True)
     elif dataset_type == "cifar5m":
-        tf.transforms.append(transforms.Normalize(
-            mean=(0.4914, 0.4822, 0.4465), std=(0.2470, 0.2435, 0.2616)))
-        dataset = CIFAR5m(CIFAR10_5M_PATH, transform=tf, train=train)
+        tf = transforms.Compose([])
+        tf.transforms.append(transforms.ToPILImage())
+        tf.transforms.append(transforms.ToTensor())
+        dataset = Cifar5m(CIFAR_5M_FULL_PATH, transform=tf,
+                          train=train, integrity_check=True)
     else:
         raise ValueError("Invalid dataset type.")
     return dataset
@@ -141,12 +108,14 @@ def get_cifar_dataset(dataset_type: str, train: bool = True):
 class Trainer:
     def __init__(self, train_conf: TrainingConfigs, data_conf: DataConfigs, model: nn.Module, optimizer: torch.optim.Optimizer):
         os.makedirs("models", exist_ok=True)
-        self.local_rank = int(os.getenv("LOCAL_RANK"))
+        self.local_rank = int(os.getenv("LOCAL_RANK", 0))
         self.use_ddp = train_conf.use_ddp
         if self.use_ddp:
-            self.gpu_id = int(os.getenv("LOCAL_RANK"))
-        else:
+            self.gpu_id = int(os.getenv("LOCAL_RANK", 0))
+        if self.use_ddp == False and torch.cuda.is_available():
             self.gpu_id = torch.device("cuda:0")
+        if self.use_ddp == False and torch.mps.is_available():
+            self.gpu_id = torch.device("mps")
         self.model = model.to(self.gpu_id)
         self.optimizer = optimizer
         self.loss_fn = train_conf.loss_fn
@@ -172,6 +141,7 @@ class Trainer:
             pbar = trange(0, len(train_loader.dataset)*max_epochs, position=0)
         losses = []
         accuracies = []
+
         for epoch in range(max_epochs):
             epoch_start = time.monotonic_ns()
             epoch_tloss = 0.0
@@ -179,6 +149,7 @@ class Trainer:
             per_gpu_processed_samples = 0
             for x, y_true in train_loader:
                 x, y_true = x.to(self.gpu_id), y_true.to(self.gpu_id)
+                # print(x.shape, y_true.shape)
                 self.optimizer.zero_grad()
 
                 y = self.model(x)
@@ -255,8 +226,7 @@ def train_cifar5m_and_finetune_cifarx(train_conf: TrainingConfigs, dataset_name:
             cifar5m_loader = DataLoader(
                 cifar5m_dataset,
                 batch_size=train_conf.batch_size,
-                shuffle=False,
-                num_workers=4)
+                shuffle=False)
         model, optimizer = get_model_and_optimizer(train_conf.model_type, 10)
         trainer = Trainer(train_conf=train_conf,
                           data_conf=DataConfigs(
@@ -284,8 +254,7 @@ def train_cifar5m_and_finetune_cifarx(train_conf: TrainingConfigs, dataset_name:
         train_loader = DataLoader(
             train_dataset,
             batch_size=train_conf.batch_size,
-            shuffle=False,
-            num_workers=4)
+            shuffle=False)
     model, optimizer = get_model_and_optimizer(train_conf.model_type, 10)
     if use_pretrained_weights:
         print(f'Loading pretrained weights from: {checkpoint_path}')
@@ -342,8 +311,7 @@ def train_cifar5m(train_conf: TrainingConfigs):
         cifar5m_loader = DataLoader(
             cifar5m_dataset,
             batch_size=train_conf.batch_size,
-            shuffle=False,
-            num_workers=4)
+            shuffle=False)
     model, optimizer = get_model_and_optimizer(train_conf.model_type, 10)
     trainer = Trainer(train_conf=train_conf,
                       data_conf=DataConfigs(
@@ -376,8 +344,7 @@ def train_cifar(train_conf: TrainingConfigs, dataset_type: str):
         train_loader = DataLoader(
             cifar_dataset,
             batch_size=train_conf.batch_size,
-            shuffle=False,
-            num_workers=4)
+            shuffle=False)
     num_classes = 100 if dataset_type == "cifar100" else 10
     model, optimizer = get_model_and_optimizer(
         train_conf.model_type, num_classes)
