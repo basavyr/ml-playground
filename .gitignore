@@ -84,3 +84,6 @@ src/embedding-splitter/models
 src/flexible-vit/__pycache__
 src/flexible-vit/.python-version
 src/flexible-vit/models
+
+hugging_face/imagenet-full/__pycache__
+hugging_face/imagenet-full/.python-version
