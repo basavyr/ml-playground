@@ -15,6 +15,7 @@
         "CUDA",
         "dataclass",
         "dotenv",
+        "efficientnet",
         "ffwd",
         "finetuning",
         "GELU",
