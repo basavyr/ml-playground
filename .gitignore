@@ -95,3 +95,5 @@ src/one-hot-test/cifar-10-batches-py
 src/one-hot-test/cifar-10-python.tar.gz
 src/one-hot-test/__pycache__
 src/one-hot-test/.python-version
+
+src/self-attention-test/.python-version
