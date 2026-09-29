@@ -62,7 +62,7 @@ class MHA(nn.Module):
         #     out_proj_bias=None,
         #     add_zero_attn=False,
         #     dropout_p=0.1)
-
+        # source: https://www.geeksforgeeks.org/deep-learning/how-to-use-pytorchs-nnmultiheadattention/
         attn_output, attn_output_weights = self.model(Q, K, V)
         return attn_output, attn_output_weights
 
